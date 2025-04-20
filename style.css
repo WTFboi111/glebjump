@@ -102,3 +102,28 @@ button:hover {
     font-size: 24px;
     margin-bottom: 20px;
 }
+
+/* Previous styles remain the same, just add these: */
+
+/* Remove the old mobile controls */
+#mobile-controls {
+    display: none;
+}
+
+/* Add visual feedback for touch controls */
+#game-canvas {
+    cursor: pointer;
+}
+
+/* Improve button styles */
+button {
+    padding: 15px 30px;
+    font-size: 20px;
+    background: linear-gradient(to bottom, #4CAF50, #45a049);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
