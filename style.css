@@ -51,7 +51,7 @@ body {
 
 #game-canvas {
   display: block;
-  width: 56.25vw; /* Сохраняем соотношение сторон 9:16 */
-  height: 100vh;
+  max-width: 100%;
+  max-height: 100%;
   background-color: #fff; /* Белый фон для холста */
 }
