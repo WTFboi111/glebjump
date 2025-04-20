@@ -11,8 +11,8 @@ const bgMusic = document.getElementById('bg-music');
 const musicToggle = document.getElementById('music-toggle');
 
 // Set canvas size
-canvas.width = 720;
-canvas.height = 1280;
+canvas.width = 360;
+canvas.height = 640;
 
 // Game state
 let gameRunning = false;
