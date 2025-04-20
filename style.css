@@ -1,57 +1,104 @@
-/* Общие стили */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    touch-action: manipulation;
 }
 
 body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: #87CEEB; /* Небесно-голубой фон */
-  overflow: hidden;
-}
-
-#start-screen {
-  text-align: center;
-  color: white;
-  font-family: Arial, sans-serif;
-  z-index: 10;
-}
-
-#start-screen h1 {
-  font-size: 3rem;
-}
-
-#start-screen button {
-  padding: 10px 20px;
-  font-size: 1.5rem;
-  background-color: #007BFF;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-#start-screen button:hover {
-  background-color: #0056b3;
+    background-color: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
 }
 
 #game-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    height: 640px;
+    background-color: #87CEEB;
+    overflow: hidden;
+    border: 2px solid #333;
+    border-radius: 10px;
 }
 
 #game-canvas {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  background-color: #fff; /* Белый фон для холста */
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+#mobile-controls {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    pointer-events: none;
+}
+
+.control-left, .control-right {
+    width: 80px;
+    height: 80px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    pointer-events: auto;
+}
+
+#score-display {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#start-screen, #game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    text-align: center;
+}
+
+#start-screen h1, #game-over-screen h2 {
+    font-size: 36px;
+    margin-bottom: 20px;
+    color: #FFD700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+button {
+    padding: 12px 24px;
+    font-size: 18px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#final-score {
+    font-size: 24px;
+    margin-bottom: 20px;
 }
