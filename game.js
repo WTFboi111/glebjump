@@ -14,6 +14,9 @@ const musicToggle = document.getElementById('music-toggle');
 canvas.width = 360;
 canvas.height = 640;
 
+// Control settings
+const DEAD_ZONE = 15; // Dead zone in pixels for touch controls
+
 // Game state
 let gameRunning = false;
 let score = 0;
@@ -50,7 +53,6 @@ function createPlatformTexture(type) {
     const ctx = canvas.getContext('2d');
     
     if (type === PLATFORM_TYPES.NORMAL) {
-        // Green platform
         ctx.fillStyle = '#4CAF50';
         ctx.fillRect(0, 0, 45, 15);
         ctx.fillStyle = '#388E3C';
@@ -58,10 +60,8 @@ function createPlatformTexture(type) {
             ctx.fillRect(i * 9, 12, 8, 3);
         }
     } else {
-        // Red breakable platform
         ctx.fillStyle = '#F44336';
         ctx.fillRect(0, 0, 45, 15);
-        // Crack effect
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -75,9 +75,8 @@ function createPlatformTexture(type) {
     return canvas;
 }
 
-// Background gradient with clouds
+// Background
 function drawBackground() {
-    // Gradient sky
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, '#87CEEB');
     gradient.addColorStop(0.7, '#E0F7FA');
@@ -85,7 +84,6 @@ function drawBackground() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Clouds
     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     for (let i = 0; i < 5; i++) {
         const x = (i * 100 + score / 3) % (canvas.width + 100) - 50;
@@ -108,17 +106,13 @@ const PLATFORM_COUNT = 15;
 const PLATFORM_WIDTH = 45;
 const PLATFORM_HEIGHT = 15;
 
-// Platform textures
 const platformTextures = {
     [PLATFORM_TYPES.NORMAL]: createPlatformTexture(PLATFORM_TYPES.NORMAL),
     [PLATFORM_TYPES.BREAKABLE]: createPlatformTexture(PLATFORM_TYPES.BREAKABLE)
 };
 
-// Generate platforms
 function generatePlatforms() {
     platforms = [];
-    
-    // Initial platform
     platforms.push({
         x: canvas.width / 2 - PLATFORM_WIDTH / 2,
         y: canvas.height - 50,
@@ -127,7 +121,6 @@ function generatePlatforms() {
         type: PLATFORM_TYPES.NORMAL
     });
     
-    // Random platforms
     const verticalStep = (canvas.height - 100) / (PLATFORM_COUNT - 1);
     for (let i = 0; i < PLATFORM_COUNT; i++) {
         const y = Math.max(50, i * verticalStep + (Math.random() * 50 - 25));
@@ -141,12 +134,10 @@ function generatePlatforms() {
     }
 }
 
-// Draw player from image
 function drawPlayer() {
     ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
 }
 
-// Draw platforms
 function drawPlatforms() {
     platforms.forEach(platform => {
         ctx.drawImage(
@@ -157,7 +148,6 @@ function drawPlatforms() {
     });
 }
 
-// Check platform collision
 function checkPlatformCollision() {
     const playerBottom = player.y + player.height;
     const playerCenter = player.x + player.width / 2;
@@ -188,20 +178,16 @@ function checkPlatformCollision() {
     });
 }
 
-// Update player position
 function updatePlayer() {
     player.dy += player.gravity;
     player.y += player.dy;
     player.x += player.dx;
     
-    // Screen wrapping
     if (player.x + player.width < 0) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -player.width;
     
-    // Game over if fall
     if (player.y > canvas.height) gameOver();
     
-    // Camera follow
     if (player.y < canvas.height / 3) {
         const diff = canvas.height / 3 - player.y;
         player.y = canvas.height / 3;
@@ -220,7 +206,6 @@ function updatePlayer() {
     checkPlatformCollision();
 }
 
-// Game loop
 function gameLoop() {
     if (!gameRunning) return;
     
@@ -233,7 +218,6 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Start game
 function startGame() {
     if (musicToggle.checked) {
         bgMusic.currentTime = 0;
@@ -256,7 +240,6 @@ function startGame() {
     gameLoop();
 }
 
-// Game over
 function gameOver() {
     gameRunning = false;
     bgMusic.pause();
@@ -265,7 +248,7 @@ function gameOver() {
     if (score > highScore) highScore = score;
 }
 
-// Controls
+// Keyboard controls
 document.addEventListener('keydown', (e) => {
     if (!gameRunning) return;
     if (e.key === 'ArrowLeft' || e.key === 'a') player.dx = -player.speed;
@@ -279,22 +262,51 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-// Touch controls
+// Improved touch controls with dead zone
 canvas.addEventListener('touchstart', (e) => {
     if (!gameRunning) return;
     e.preventDefault();
     touchX = e.touches[0].clientX;
+    player.dx = 0;
 });
 
 canvas.addEventListener('touchmove', (e) => {
     if (!gameRunning || !touchX) return;
     e.preventDefault();
+    
     const newX = e.touches[0].clientX;
-    player.dx = newX > touchX ? player.speed : -player.speed;
-    touchX = newX;
+    const deltaX = newX - touchX;
+    
+    if (Math.abs(deltaX) > DEAD_ZONE) {
+        player.dx = deltaX > 0 ? player.speed : -player.speed;
+        touchX = newX;
+    }
 });
 
 canvas.addEventListener('touchend', () => {
+    player.dx = 0;
+    touchX = null;
+});
+
+// Mouse controls for testing
+canvas.addEventListener('mousedown', (e) => {
+    if (!gameRunning) return;
+    touchX = e.clientX;
+    player.dx = 0;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!gameRunning || !touchX) return;
+    const newX = e.clientX;
+    const deltaX = newX - touchX;
+    
+    if (Math.abs(deltaX) > DEAD_ZONE) {
+        player.dx = deltaX > 0 ? player.speed : -player.speed;
+        touchX = newX;
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
     player.dx = 0;
     touchX = null;
 });
