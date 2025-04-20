@@ -11,9 +11,10 @@ let isGameStarted = false;
 let platforms = [];
 
 // Размеры зависят от размеров экрана
-const platformWidth = canvas.width * 0.15; // 15% ширины экрана
-const platformHeight = canvas.height * 0.02; // 2% высоты экрана
-const platformGap = canvas.height * 0.15; // 15% высоты экрана
+const platformWidth = canvas.width * 0.05; // В 3 раза уже (5% ширины экрана)
+const platformHeight = canvas.height * 0.01; // 1% высоты экрана
+const screenDivisions = 25; // Экран разделен на 25 невидимых высот
+const minPlatformGap = canvas.height / screenDivisions * 3; // Минимальное расстояние между платформами
 
 // Персонаж
 const hero = {
@@ -33,15 +34,18 @@ hero.image.src = './assets/hero.png';
 // Генерация платформ
 function generatePlatforms() {
   platforms = [];
-  for (let i = 0; i < 15; i++) {
-    const x = Math.random() * (canvas.width - platformWidth);
-    const y = i * (platformGap + Math.random() * platformGap * 0.5); // Разные высоты
-    const type = Math.random() > 0.7 ? 'breakable' : 'normal'; // 30% шанс ломающегося блока
-    platforms.push({ x, y, type });
+  for (let i = 0; i < screenDivisions; i++) {
+    const numPlatformsOnRow = Math.floor(Math.random() * 4) + 1; // 1-4 платформы на одной высоте
+    for (let j = 0; j < numPlatformsOnRow; j++) {
+      const x = Math.random() * (canvas.width - platformWidth);
+      const y = i * (minPlatformGap + Math.random() * minPlatformGap * 0.5); // Разные высоты
+      const type = Math.random() > 0.7 ? 'breakable' : 'normal'; // 30% шанс ломающегося блока
+      platforms.push({ x, y, type });
+    }
   }
 
   // Добавляем полный первый ряд платформ
-  for (let x = 0; x < canvas.width; x += platformWidth) {
+  for (let x = 0; x < canvas.width; x += platformWidth * 2) {
     platforms.push({ x, y: canvas.height - platformHeight, type: 'normal' });
   }
 }
@@ -84,7 +88,7 @@ function gameLoop() {
         platforms.splice(index, 1);
         platforms.push({
           x: Math.random() * (canvas.width - platformWidth),
-          y: platforms[platforms.length - 1].y - (platformGap + Math.random() * platformGap * 0.5),
+          y: platforms[platforms.length - 1].y - (minPlatformGap + Math.random() * minPlatformGap * 0.5),
           type: Math.random() > 0.7 ? 'breakable' : 'normal',
         });
       }
@@ -103,7 +107,7 @@ function gameLoop() {
         platforms.splice(index, 1);
         platforms.push({
           x: Math.random() * (canvas.width - platformWidth),
-          y: platforms[0].y - (platformGap + Math.random() * platformGap * 0.5),
+          y: platforms[0].y - (minPlatformGap + Math.random() * minPlatformGap * 0.5),
           type: Math.random() > 0.7 ? 'breakable' : 'normal',
         });
       }
