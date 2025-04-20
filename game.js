@@ -7,8 +7,6 @@ const gameOverScreen = document.getElementById('game-over-screen');
 const finalScoreDisplay = document.getElementById('final-score');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
-const leftBtn = document.getElementById('left-btn');
-const rightBtn = document.getElementById('right-btn');
 
 // Set canvas size
 canvas.width = 360;
@@ -18,6 +16,7 @@ canvas.height = 640;
 let gameRunning = false;
 let score = 0;
 let highScore = 0;
+let touchX = null;
 
 // Player
 const player = {
@@ -25,7 +24,7 @@ const player = {
     y: canvas.height - 100,
     width: 50,
     height: 50,
-    speed: 5,
+    speed: 6,
     dx: 0,
     dy: 0,
     gravity: 0.4,
@@ -42,13 +41,25 @@ const PLATFORM_TYPES = {
     BREAKABLE: 1
 };
 
+// Platform assets
+const platformImages = {
+    [PLATFORM_TYPES.NORMAL]: new Image(),
+    [PLATFORM_TYPES.BREAKABLE]: new Image()
+};
+platformImages[PLATFORM_TYPES.NORMAL].src = 'assets/platform-green.png';
+platformImages[PLATFORM_TYPES.BREAKABLE].src = 'assets/platform-red.png';
+
+// Background
+const bgImage = new Image();
+bgImage.src = 'assets/background.png';
+
 // Platforms
 let platforms = [];
-const PLATFORM_COUNT = 8;
-const PLATFORM_WIDTH = 70;
-const PLATFORM_HEIGHT = 20;
+const PLATFORM_COUNT = 15; // Увеличили количество платформ
+const PLATFORM_WIDTH = 45;  // Уменьшили ширину в 1.5 раза (было 70)
+const PLATFORM_HEIGHT = 15;
 
-// Generate platforms
+// Generate platforms with better distribution
 function generatePlatforms() {
     platforms = [];
     
@@ -61,16 +72,28 @@ function generatePlatforms() {
         type: PLATFORM_TYPES.NORMAL
     });
     
-    // Generate other platforms
+    // Generate other platforms with better vertical distribution
+    const verticalStep = (canvas.height - 100) / (PLATFORM_COUNT - 1);
+    
     for (let i = 0; i < PLATFORM_COUNT; i++) {
+        // Распределяем платформы более равномерно по высоте
+        const baseY = i * verticalStep;
+        // Добавляем небольшой случайный разброс
+        const y = Math.max(50, baseY + (Math.random() * 50 - 25));
+        
         platforms.push({
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-            y: Math.random() * (canvas.height - 100),
+            y: y,
             width: PLATFORM_WIDTH,
             height: PLATFORM_HEIGHT,
-            type: Math.random() > 0.7 ? PLATFORM_TYPES.BREAKABLE : PLATFORM_TYPES.NORMAL
+            type: Math.random() > 0.8 ? PLATFORM_TYPES.BREAKABLE : PLATFORM_TYPES.NORMAL
         });
     }
+}
+
+// Draw background
+function drawBackground() {
+    ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 }
 
 // Draw player
@@ -81,12 +104,11 @@ function drawPlayer() {
 // Draw platforms
 function drawPlatforms() {
     platforms.forEach(platform => {
-        if (platform.type === PLATFORM_TYPES.NORMAL) {
-            ctx.fillStyle = '#4CAF50';
-        } else {
-            ctx.fillStyle = '#F44336';
-        }
-        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+        ctx.drawImage(
+            platformImages[platform.type],
+            platform.x, platform.y,
+            platform.width, platform.height
+        );
     });
 }
 
@@ -121,7 +143,7 @@ function checkPlatformCollision() {
                         y: -50,
                         width: PLATFORM_WIDTH,
                         height: PLATFORM_HEIGHT,
-                        type: Math.random() > 0.7 ? PLATFORM_TYPES.BREAKABLE : PLATFORM_TYPES.NORMAL
+                        type: Math.random() > 0.8 ? PLATFORM_TYPES.BREAKABLE : PLATFORM_TYPES.NORMAL
                     });
                 }, 100);
             }
@@ -150,10 +172,10 @@ function updatePlayer() {
         gameOver();
     }
     
-    // Camera follow (scroll platforms down when player reaches top half)
-    if (player.y < canvas.height / 2) {
-        const diff = canvas.height / 2 - player.y;
-        player.y = canvas.height / 2;
+    // Camera follow (scroll platforms down when player reaches top 1/3)
+    if (player.y < canvas.height / 3) {
+        const diff = canvas.height / 3 - player.y;
+        player.y = canvas.height / 3;
         
         // Move platforms down
         platforms.forEach(platform => {
@@ -163,7 +185,7 @@ function updatePlayer() {
             if (platform.y > canvas.height) {
                 platform.y = -platform.height;
                 platform.x = Math.random() * (canvas.width - platform.width);
-                platform.type = Math.random() > 0.7 ? PLATFORM_TYPES.BREAKABLE : PLATFORM_TYPES.NORMAL;
+                platform.type = Math.random() > 0.8 ? PLATFORM_TYPES.BREAKABLE : PLATFORM_TYPES.NORMAL;
                 
                 // Increase score
                 score += 10;
@@ -183,6 +205,7 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Update and draw
+    drawBackground();
     updatePlayer();
     drawPlatforms();
     drawPlayer();
@@ -219,7 +242,7 @@ function gameOver() {
     }
 }
 
-// Event listeners for keyboard controls
+// Keyboard controls
 document.addEventListener('keydown', (e) => {
     if (!gameRunning) return;
     
@@ -239,32 +262,57 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-// Touch controls for mobile
-let leftPressed = false;
-let rightPressed = false;
-
-leftBtn.addEventListener('touchstart', (e) => {
+// Modern touch controls
+canvas.addEventListener('touchstart', (e) => {
+    if (!gameRunning) return;
     e.preventDefault();
-    leftPressed = true;
-    player.dx = -player.speed;
+    touchX = e.touches[0].clientX;
 });
 
-leftBtn.addEventListener('touchend', (e) => {
+canvas.addEventListener('touchmove', (e) => {
+    if (!gameRunning || !touchX) return;
     e.preventDefault();
-    leftPressed = false;
-    if (!rightPressed) player.dx = 0;
+    
+    const newTouchX = e.touches[0].clientX;
+    const deltaX = newTouchX - touchX;
+    
+    if (Math.abs(deltaX) > 5) { // Deadzone to prevent accidental movement
+        player.dx = deltaX > 0 ? player.speed : -player.speed;
+    }
+    
+    touchX = newTouchX;
 });
 
-rightBtn.addEventListener('touchstart', (e) => {
+canvas.addEventListener('touchend', (e) => {
+    if (!gameRunning) return;
     e.preventDefault();
-    rightPressed = true;
-    player.dx = player.speed;
+    player.dx = 0;
+    touchX = null;
 });
 
-rightBtn.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    rightPressed = false;
-    if (!leftPressed) player.dx = 0;
+// Mouse controls for testing on desktop
+canvas.addEventListener('mousedown', (e) => {
+    if (!gameRunning) return;
+    touchX = e.clientX;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!gameRunning || !touchX) return;
+    
+    const newTouchX = e.clientX;
+    const deltaX = newTouchX - touchX;
+    
+    if (Math.abs(deltaX) > 5) {
+        player.dx = deltaX > 0 ? player.speed : -player.speed;
+    }
+    
+    touchX = newTouchX;
+});
+
+canvas.addEventListener('mouseup', (e) => {
+    if (!gameRunning) return;
+    player.dx = 0;
+    touchX = null;
 });
 
 // Start and restart buttons
@@ -272,6 +320,11 @@ startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 
 // Initialize
-player.image.onload = () => {
+window.onload = () => {
+    // Hide mobile controls on desktop
+    if (window.innerWidth > 768) {
+        document.getElementById('mobile-controls').style.display = 'none';
+    }
+    
     startScreen.style.display = 'flex';
 };
