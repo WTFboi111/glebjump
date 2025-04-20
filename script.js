@@ -3,26 +3,28 @@ const ctx = canvas.getContext('2d');
 
 // Настройка размеров холста для телефонного формата (9:16)
 const aspectRatio = 9 / 16;
-canvas.width = window.innerWidth;
+canvas.width = window.innerWidth * 0.5625; // 56.25% ширины экрана
 canvas.height = canvas.width / aspectRatio;
 
 // Переменные игры
 let isGameStarted = false;
 let platforms = [];
-const platformWidth = 80;
-const platformHeight = 20;
-const platformGap = 150;
+
+// Размеры зависят от размеров экрана
+const platformWidth = canvas.width * 0.15; // 15% ширины экрана
+const platformHeight = canvas.height * 0.02; // 2% высоты экрана
+const platformGap = canvas.height * 0.15; // 15% высоты экрана
 
 // Персонаж
 const hero = {
   x: canvas.width / 2,
-  y: canvas.height - 150,
-  width: 50,
-  height: 50,
+  y: canvas.height - canvas.height * 0.2, // 20% от нижней части экрана
+  width: canvas.width * 0.1, // 10% ширины экрана
+  height: canvas.width * 0.1, // 10% ширины экрана
   dx: 0,
   dy: 0,
-  gravity: 0.5,
-  jumpStrength: -10,
+  gravity: canvas.height * 0.001, // Гравитация зависит от высоты экрана
+  jumpStrength: -canvas.height * 0.02, // Прыжок зависит от высоты экрана
   image: new Image(),
 };
 
@@ -31,9 +33,9 @@ hero.image.src = './assets/hero.png';
 // Генерация платформ
 function generatePlatforms() {
   platforms = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 15; i++) {
     const x = Math.random() * (canvas.width - platformWidth);
-    const y = i * platformGap;
+    const y = i * (platformGap + Math.random() * platformGap * 0.5); // Разные высоты
     const type = Math.random() > 0.7 ? 'breakable' : 'normal'; // 30% шанс ломающегося блока
     platforms.push({ x, y, type });
   }
@@ -82,7 +84,7 @@ function gameLoop() {
         platforms.splice(index, 1);
         platforms.push({
           x: Math.random() * (canvas.width - platformWidth),
-          y: platforms[platforms.length - 1].y - platformGap,
+          y: platforms[platforms.length - 1].y - (platformGap + Math.random() * platformGap * 0.5),
           type: Math.random() > 0.7 ? 'breakable' : 'normal',
         });
       }
@@ -101,7 +103,7 @@ function gameLoop() {
         platforms.splice(index, 1);
         platforms.push({
           x: Math.random() * (canvas.width - platformWidth),
-          y: platforms[0].y - platformGap,
+          y: platforms[0].y - (platformGap + Math.random() * platformGap * 0.5),
           type: Math.random() > 0.7 ? 'breakable' : 'normal',
         });
       }
@@ -120,9 +122,9 @@ function gameLoop() {
 // Управление
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft' || e.key === 'a') {
-    hero.dx = -5;
+    hero.dx = -canvas.width * 0.01; // Скорость движения зависит от ширины экрана
   } else if (e.key === 'ArrowRight' || e.key === 'd') {
-    hero.dx = 5;
+    hero.dx = canvas.width * 0.01; // Скорость движения зависит от ширины экрана
   }
 });
 
@@ -139,7 +141,7 @@ canvas.addEventListener('touchstart', (e) => {
 
 canvas.addEventListener('touchmove', (e) => {
   const touchEndX = e.touches[0].clientX;
-  hero.dx = (touchEndX - touchStartX) * 0.1;
+  hero.dx = (touchEndX - touchStartX) * 0.01; // Скорость зависит от разницы координат
 });
 
 canvas.addEventListener('touchend', () => {
