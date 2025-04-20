@@ -25,7 +25,7 @@ const hero = {
   dx: 0,
   dy: 0,
   gravity: canvas.height * 0.001, // Гравитация зависит от высоты экрана
-  jumpStrength: -canvas.height * 0.035, // Прыжок зависит от высоты экрана
+  jumpStrength: -canvas.height * 0.027, // Прыжок зависит от высоты экрана
   image: new Image(),
 };
 
