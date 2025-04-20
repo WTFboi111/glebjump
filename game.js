@@ -15,13 +15,14 @@ canvas.width = 360;
 canvas.height = 640;
 
 // Control settings
-const DEAD_ZONE = 15; // Dead zone in pixels for touch controls
+let targetX = null; // X-координата цели для движения
+const MOVE_SPEED = 0.1; // Скорость приближения к цели (0.1 = 10% за кадр)
+const MAX_STEP = 6; // Максимальная скорость перемещения
 
 // Game state
 let gameRunning = false;
 let score = 0;
 let highScore = 0;
-let touchX = null;
 
 // Player
 const player = {
@@ -29,8 +30,6 @@ const player = {
     y: canvas.height - 100,
     width: 50,
     height: 50,
-    speed: 6,
-    dx: 0,
     dy: 0,
     gravity: 0.4,
     jumpForce: -12,
@@ -181,13 +180,29 @@ function checkPlatformCollision() {
 function updatePlayer() {
     player.dy += player.gravity;
     player.y += player.dy;
-    player.x += player.dx;
     
+    // Плавное движение к цели
+    if (targetX !== null) {
+        const targetCenter = targetX - player.width/2;
+        const distance = targetCenter - player.x;
+        let step = distance * MOVE_SPEED;
+        
+        // Ограничиваем максимальную скорость
+        if (Math.abs(step) > MAX_STEP) {
+            step = Math.sign(step) * MAX_STEP;
+        }
+        
+        player.x += step;
+    }
+    
+    // Screen wrapping
     if (player.x + player.width < 0) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -player.width;
     
+    // Game over if fall
     if (player.y > canvas.height) gameOver();
     
+    // Camera follow
     if (player.y < canvas.height / 3) {
         const diff = canvas.height / 3 - player.y;
         player.y = canvas.height / 3;
@@ -228,8 +243,8 @@ function startGame() {
     scoreDisplay.textContent = `Score: ${score}`;
     player.x = canvas.width / 2 - 25;
     player.y = canvas.height - 100;
-    player.dx = 0;
     player.dy = 0;
+    targetX = null;
     
     generatePlatforms();
     
@@ -248,67 +263,57 @@ function gameOver() {
     if (score > highScore) highScore = score;
 }
 
-// Keyboard controls
+// Touch controls (move to target)
+canvas.addEventListener('touchstart', (e) => {
+    if (!gameRunning) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    targetX = e.touches[0].clientX - rect.left;
+});
+
+canvas.addEventListener('touchmove', (e) => {
+    if (!gameRunning) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    targetX = e.touches[0].clientX - rect.left;
+});
+
+canvas.addEventListener('touchend', () => {
+    targetX = null;
+});
+
+// Mouse controls (for testing on desktop)
+canvas.addEventListener('mousedown', (e) => {
+    if (!gameRunning) return;
+    const rect = canvas.getBoundingClientRect();
+    targetX = e.clientX - rect.left;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!gameRunning || e.buttons !== 1) return;
+    const rect = canvas.getBoundingClientRect();
+    targetX = e.clientX - rect.left;
+});
+
+canvas.addEventListener('mouseup', () => {
+    targetX = null;
+});
+
+// Keyboard controls (left/right for desktop)
 document.addEventListener('keydown', (e) => {
     if (!gameRunning) return;
-    if (e.key === 'ArrowLeft' || e.key === 'a') player.dx = -player.speed;
-    if (e.key === 'ArrowRight' || e.key === 'd') player.dx = player.speed;
+    if (e.key === 'ArrowLeft' || e.key === 'a') {
+        targetX = player.x - 50;
+    } else if (e.key === 'ArrowRight' || e.key === 'd') {
+        targetX = player.x + 50;
+    }
 });
 
 document.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft' || e.key === 'a' || 
         e.key === 'ArrowRight' || e.key === 'd') {
-        player.dx = 0;
+        targetX = null;
     }
-});
-
-// Improved touch controls with dead zone
-canvas.addEventListener('touchstart', (e) => {
-    if (!gameRunning) return;
-    e.preventDefault();
-    touchX = e.touches[0].clientX;
-    player.dx = 0;
-});
-
-canvas.addEventListener('touchmove', (e) => {
-    if (!gameRunning || !touchX) return;
-    e.preventDefault();
-    
-    const newX = e.touches[0].clientX;
-    const deltaX = newX - touchX;
-    
-    if (Math.abs(deltaX) > DEAD_ZONE) {
-        player.dx = deltaX > 0 ? player.speed : -player.speed;
-        touchX = newX;
-    }
-});
-
-canvas.addEventListener('touchend', () => {
-    player.dx = 0;
-    touchX = null;
-});
-
-// Mouse controls for testing
-canvas.addEventListener('mousedown', (e) => {
-    if (!gameRunning) return;
-    touchX = e.clientX;
-    player.dx = 0;
-});
-
-canvas.addEventListener('mousemove', (e) => {
-    if (!gameRunning || !touchX) return;
-    const newX = e.clientX;
-    const deltaX = newX - touchX;
-    
-    if (Math.abs(deltaX) > DEAD_ZONE) {
-        player.dx = deltaX > 0 ? player.speed : -player.speed;
-        touchX = newX;
-    }
-});
-
-canvas.addEventListener('mouseup', () => {
-    player.dx = 0;
-    touchX = null;
 });
 
 // Music control
