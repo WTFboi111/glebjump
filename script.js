@@ -14,7 +14,7 @@ let platforms = [];
 const platformWidth = canvas.width * 0.05; // В 3 раза уже (5% ширины экрана)
 const platformHeight = canvas.height * 0.01; // 1% высоты экрана
 const screenDivisions = 25; // Экран разделен на 25 невидимых высот
-const minPlatformGap = canvas.height / screenDivisions * 3; // Минимальное расстояние между платформами
+const minPlatformGap = canvas.height / screenDivisions; // Минимальное расстояние между платформами
 
 // Персонаж
 const hero = {
@@ -25,7 +25,7 @@ const hero = {
   dx: 0,
   dy: 0,
   gravity: canvas.height * 0.001, // Гравитация зависит от высоты экрана
-  jumpStrength: -canvas.height * 0.02, // Прыжок зависит от высоты экрана
+  jumpStrength: -canvas.height * 0.035, // Прыжок зависит от высоты экрана
   image: new Image(),
 };
 
@@ -35,7 +35,7 @@ hero.image.src = './assets/hero.png';
 function generatePlatforms() {
   platforms = [];
   for (let i = 0; i < screenDivisions; i++) {
-    const numPlatformsOnRow = Math.floor(Math.random() * 4) + 1; // 1-4 платформы на одной высоте
+    const numPlatformsOnRow = Math.floor(Math.random() * 4) + 2; // 1-4 платформы на одной высоте
     for (let j = 0; j < numPlatformsOnRow; j++) {
       const x = Math.random() * (canvas.width - platformWidth);
       const y = i * (minPlatformGap + Math.random() * minPlatformGap * 0.5); // Разные высоты
@@ -45,7 +45,7 @@ function generatePlatforms() {
   }
 
   // Добавляем полный первый ряд платформ
-  for (let x = 0; x < canvas.width; x += platformWidth * 2) {
+  for (let x = 0; x < canvas.width; x += platformWidth * 4) {
     platforms.push({ x, y: canvas.height - platformHeight, type: 'normal' });
   }
 }
