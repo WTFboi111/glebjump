@@ -6,6 +6,13 @@ const aspectRatio = 9 / 16;
 canvas.width = window.innerWidth;
 canvas.height = canvas.width / aspectRatio;
 
+// Переменные игры
+let isGameStarted = false;
+let platforms = [];
+const platformWidth = 80;
+const platformHeight = 20;
+const platformGap = 150;
+
 // Персонаж
 const hero = {
   x: canvas.width / 2,
@@ -21,26 +28,26 @@ const hero = {
 
 hero.image.src = './assets/hero.png';
 
-// Блоки
-const platforms = [];
-const platformWidth = 80;
-const platformHeight = 20;
-const platformGap = 150;
-
-// Генерация начальных блоков
+// Генерация платформ
 function generatePlatforms() {
+  platforms = [];
   for (let i = 0; i < 10; i++) {
     const x = Math.random() * (canvas.width - platformWidth);
     const y = i * platformGap;
     const type = Math.random() > 0.7 ? 'breakable' : 'normal'; // 30% шанс ломающегося блока
     platforms.push({ x, y, type });
   }
-}
 
-generatePlatforms();
+  // Добавляем полный первый ряд платформ
+  for (let x = 0; x < canvas.width; x += platformWidth) {
+    platforms.push({ x, y: canvas.height - platformHeight, type: 'normal' });
+  }
+}
 
 // Основной игровой цикл
 function gameLoop() {
+  if (!isGameStarted) return;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Рисуем персонажа
@@ -139,5 +146,15 @@ canvas.addEventListener('touchend', () => {
   hero.dx = 0;
 });
 
-// Запуск игры
-gameLoop();
+// Кнопка "Старт"
+const startScreen = document.getElementById('start-screen');
+const startButton = document.getElementById('start-button');
+const gameContainer = document.getElementById('game-container');
+
+startButton.addEventListener('click', () => {
+  isGameStarted = true;
+  startScreen.style.display = 'none';
+  gameContainer.style.display = 'block';
+  generatePlatforms();
+  gameLoop();
+});
