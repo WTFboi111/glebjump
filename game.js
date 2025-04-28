@@ -145,6 +145,8 @@ const platformTextures = {
 
 function generatePlatforms() {
     platforms = [];
+    
+    // Начальная платформа под игроком
     platforms.push({
         x: canvas.width / 2 - PLATFORM_WIDTH / 2,
         y: canvas.height - 50,
@@ -153,29 +155,35 @@ function generatePlatforms() {
         type: PLATFORM_TYPES.NORMAL
     });
     
-    const verticalStep = (canvas.height - 100) / (PLATFORM_COUNT - 1);
+    // Генерация остальных платформ с правильным распределением
+    const minVerticalGap = 60;  // Минимальный вертикальный отступ
+    const maxVerticalGap = 120; // Максимальный вертикальный отступ
+    let currentY = canvas.height - 100; // Начинаем чуть выше начальной платформы
+    
     for (let i = 0; i < PLATFORM_COUNT; i++) {
-        const y = Math.max(50, i * verticalStep + (Math.random() * 50 - 25));
+        // Случайный отступ в пределах диапазона
+        currentY -= minVerticalGap + Math.random() * (maxVerticalGap - minVerticalGap);
+        
+        // Случайный тип платформы (синие - редко)
         let type;
         const rand = Math.random();
         
-        if (rand > 0.9) {
-            type = PLATFORM_TYPES.BOUNCY; // 10% chance for bouncy
-        } else if (rand > 0.7) {
+        if (rand > 0.95) {
+            type = PLATFORM_TYPES.BOUNCY; // 5% chance for bouncy
+        } else if (rand > 0.75) {
             type = PLATFORM_TYPES.BREAKABLE; // 20% chance for breakable
         } else {
-            type = PLATFORM_TYPES.NORMAL; // 70% chance for normal
+            type = PLATFORM_TYPES.NORMAL; // 75% chance for normal
         }
         
         platforms.push({
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-            y: y,
+            y: currentY,
             width: PLATFORM_WIDTH,
             height: PLATFORM_HEIGHT,
             type: type
         });
     }
-    
     // Spawn fruit with 30% chance
     if (Math.random() > 0.7 && !fruit.active) {
         const platform = platforms[Math.floor(Math.random() * platforms.length)];
@@ -217,7 +225,7 @@ function checkPlatformCollision() {
             playerCenter <= platform.x + platform.width) {
             
             if (platform.type === PLATFORM_TYPES.BOUNCY) {
-                player.dy = player.jumpForce * 5; // 5x higher jump
+                player.dy = player.jumpForce * 2.5; // 5x higher jump
             } else {
                 player.dy = player.jumpForce;
             }
