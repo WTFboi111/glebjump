@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gleb Jump</title>
+    <title>Doodle Jump</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
         <div id="score-display">Score: 0</div>
+        <div id="lives-display">Lives: 1</div>
         <div id="start-screen">
-            <h1> Gleb Jump</h1>
+            <h1>Gleb Jump</h1>
             <button id="start-btn">Поднять блок</button>
             <div class="music-control">
                 <label for="music-toggle">Музыка:</label>
@@ -20,8 +21,8 @@
         </div>
         <div id="game-over-screen" style="display: none;">
             <h2>Блок упал...</h2>
-            <p id="final-score">Ваш счёт:: 0</p>
-            <button id="restart-btn">Попробовать ещё раз</button>
+            <p id="final-score">Ваш счёт: 0</p>
+            <button id="restart-btn">Попробовать ещё раз<</button>
         </div>
     </div>
     <audio id="bg-music" loop>
