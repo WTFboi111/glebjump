@@ -56,11 +56,11 @@ const PLATFORM_TYPES = {
     MOVING: 3       // Yellow - moves horizontally
 };
 
-// Platform settings
-const PLATFORM_WIDTH = 70;
+// Platform settings - измененные значения
+const PLATFORM_WIDTH = 35; // Было 70, теперь в 2 раза уже
 const PLATFORM_HEIGHT = 20;
-const MIN_VERTICAL_GAP = 60;
-const MAX_VERTICAL_GAP = 120;
+const MIN_VERTICAL_GAP = 40; // Было 60, уменьшено для более частого появления
+const MAX_VERTICAL_GAP = 80;  // Было 120, уменьшено
 
 // Fruit
 const fruit = {
@@ -84,8 +84,8 @@ function createPlatformTexture(type) {
         ctx.fillStyle = '#4CAF50';
         ctx.fillRect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT);
         ctx.fillStyle = '#388E3C';
-        for (let i = 0; i < 7; i++) {
-            ctx.fillRect(i * 10, 15, 8, 5);
+        for (let i = 0; i < 4; i++) { // Уменьшено количество полосок для узкой платформы
+            ctx.fillRect(i * 8, 15, 6, 5);
         }
     } 
     else if (type === PLATFORM_TYPES.BREAKABLE) {
@@ -94,11 +94,10 @@ function createPlatformTexture(type) {
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(10, 10);
-        ctx.lineTo(25, 15);
-        ctx.lineTo(40, 5);
-        ctx.lineTo(55, 10);
-        ctx.lineTo(65, 3);
+        ctx.moveTo(5, 10);
+        ctx.lineTo(15, 15);
+        ctx.lineTo(25, 5);
+        ctx.lineTo(35, 10);
         ctx.stroke();
     }
     else if (type === PLATFORM_TYPES.BOUNCY) {
@@ -106,20 +105,20 @@ function createPlatformTexture(type) {
         ctx.fillRect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.beginPath();
-        ctx.arc(35, 10, 7, 0, Math.PI * 2);
+        ctx.arc(PLATFORM_WIDTH/2, 10, 5, 0, Math.PI * 2); // Центрированный круг
         ctx.fill();
     }
     else if (type === PLATFORM_TYPES.MOVING) {
         ctx.fillStyle = '#FFEB3B';
         ctx.fillRect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT);
         ctx.fillStyle = '#FFC107';
-        for (let x = 10; x <= 50; x += 20) {
+        for (let x = 5; x <= 25; x += 10) { // Уменьшенные стрелки
             ctx.beginPath();
             ctx.moveTo(x, 10);
-            ctx.lineTo(x + 10, 10);
-            ctx.lineTo(x + 5, 5);
-            ctx.lineTo(x + 10, 10);
-            ctx.lineTo(x + 5, 15);
+            ctx.lineTo(x + 5, 10);
+            ctx.lineTo(x + 2.5, 5);
+            ctx.lineTo(x + 5, 10);
+            ctx.lineTo(x + 2.5, 15);
             ctx.fill();
         }
     }
@@ -175,8 +174,8 @@ function generatePlatforms() {
         type: PLATFORM_TYPES.NORMAL
     });
     
-    // Generate other platforms
-    const PLATFORM_COUNT = 19;
+    // Generate other platforms - теперь 30 вместо 19
+    const PLATFORM_COUNT = 30;
     let currentY = canvas.height - 100;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
@@ -249,7 +248,7 @@ function scrollPlatforms(diff) {
     
     // Add new platforms at the top if needed
     const topPlatformY = Math.min(...platforms.map(p => p.y));
-    const platformsNeeded = 15 - platforms.length;
+    const platformsNeeded = 25 - platforms.length; // Было 15, теперь 25
     
     if (platformsNeeded > 0) {
         let currentY = topPlatformY;
