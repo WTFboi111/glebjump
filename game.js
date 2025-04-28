@@ -36,7 +36,7 @@ const player = {
     height: 50,
     dy: 0,
     gravity: 0.4,
-    jumpForce: -12,
+    jumpForce: -13,
     isJumping: false,
     hasExtraLife: false,
     image: new Image()
@@ -133,7 +133,7 @@ function drawCloud(x, y, size) {
 
 // Platforms
 let platforms = [];
-const PLATFORM_COUNT = 15;
+const PLATFORM_COUNT = 17;
 const PLATFORM_WIDTH = 45;
 const PLATFORM_HEIGHT = 15;
 
@@ -157,7 +157,7 @@ function generatePlatforms() {
     
     // Генерация остальных платформ с правильным распределением
     const minVerticalGap = 60;  // Минимальный вертикальный отступ
-    const maxVerticalGap = 120; // Максимальный вертикальный отступ
+    const maxVerticalGap = 115; // Максимальный вертикальный отступ
     let currentY = canvas.height - 100; // Начинаем чуть выше начальной платформы
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
@@ -170,7 +170,7 @@ function generatePlatforms() {
         
         if (rand > 0.95) {
             type = PLATFORM_TYPES.BOUNCY; // 5% chance for bouncy
-        } else if (rand > 0.75) {
+        } else if (rand > 0.7) {
             type = PLATFORM_TYPES.BREAKABLE; // 20% chance for breakable
         } else {
             type = PLATFORM_TYPES.NORMAL; // 75% chance for normal
@@ -293,7 +293,7 @@ function updatePlayer(delta) {
             lives--;
             updateLivesDisplay();
             player.y = canvas.height / 3;
-            player.dy = player.jumpForce;
+            player.dy = player.jumpForce * 2.5 ;
             
             // Move platforms up to match
             const diff = player.y - (canvas.height - 100);
