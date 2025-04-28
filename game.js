@@ -21,6 +21,11 @@ const FIXED_STEP = 1000 / FPS;
 let lastTime = 0;
 let accumulator = 0;
 
+// Boost system
+let lastScoreTime = 0;
+let isBoostedJump = false;
+const SCORE_TIMEOUT = 3000; // 3 seconds for boost
+
 // Game state
 let gameRunning = false;
 let score = 0;
@@ -45,10 +50,10 @@ player.image.src = 'assets/hero.png';
 
 // Platform types
 const PLATFORM_TYPES = {
-    NORMAL: 0,
-    BREAKABLE: 1,
-    BOUNCY: 2,
-    MOVING: 3
+    NORMAL: 0,      // Green - normal
+    BREAKABLE: 1,   // Red - breaks, weak jump
+    BOUNCY: 2,      // Blue - high jump
+    MOVING: 3       // Yellow - moves horizontally
 };
 
 // Fruit
@@ -168,10 +173,10 @@ function generatePlatforms() {
     });
     
     // Generate platforms with good distribution
-    const PLATFORM_COUNT = 22;
+    const PLATFORM_COUNT = 30;
     const minGap = 50;
     const maxGap = 100;
-    let currentY = canvas.height - 50;
+    let currentY = canvas.height - 100;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
         currentY -= minGap + Math.random() * (maxGap - minGap);
@@ -263,9 +268,23 @@ function drawFruit() {
     }
 }
 
+function showBoostEffect() {
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    setTimeout(() => {
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.1)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }, 100);
+}
+
 function checkPlatformCollision() {
     const playerBottom = player.y + player.height;
     const playerCenter = player.x + player.width / 2;
+    
+    // Check time without scoring
+    const timeWithoutScore = Date.now() - lastScoreTime;
+    const shouldBoost = timeWithoutScore > SCORE_TIMEOUT && !isBoostedJump;
     
     platforms.forEach((platform, index) => {
         if (playerBottom <= platform.y + platform.height &&
@@ -274,19 +293,25 @@ function checkPlatformCollision() {
             playerCenter >= platform.x &&
             playerCenter <= platform.x + platform.width) {
             
+            let jumpForce = player.jumpForce;
+            
+            // Apply platform modifiers
             if (platform.type === PLATFORM_TYPES.BOUNCY) {
-                player.dy = player.jumpForce * 1.8; // High jump
+                jumpForce *= 1.8;
             } 
             else if (platform.type === PLATFORM_TYPES.BREAKABLE) {
-                player.dy = player.jumpForce * 0.7; // Weak jump
-                setTimeout(() => {
-                    platforms.splice(index, 1);
-                }, 100);
-            }
-            else {
-                player.dy = player.jumpForce; // Normal jump
+                jumpForce *= 0.7;
+                setTimeout(() => platforms.splice(index, 1), 100);
             }
             
+            // Apply boost if needed
+            if (shouldBoost) {
+                jumpForce *= 1.5;
+                isBoostedJump = true;
+                showBoostEffect();
+            }
+            
+            player.dy = jumpForce;
             player.isJumping = false;
         }
     });
@@ -339,10 +364,9 @@ function updatePlayer(delta) {
             
             // Respawn with bounce effect
             player.y = canvas.height - 100;
-            player.dy = player.jumpForce * 2.5;
+            player.dy = player.jumpForce * 1.8;
             
-            
-            
+           
             // Visual effect
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -385,8 +409,11 @@ function updatePlayer(delta) {
             }
         }
         
-        score += 10;
+        // Уменьшаем очки в 10 раз (1 вместо 10 за платформу)
+        score += 1;
         scoreDisplay.textContent = `Score: ${score}`;
+        lastScoreTime = Date.now();
+        isBoostedJump = false;
     }
     
     checkPlatformCollision();
@@ -458,12 +485,14 @@ function startGame() {
     score = 0;
     lives = 1;
     player.hasExtraLife = false;
-    scoreDisplay.textContent = `Score: ${score*0.1}`;
+    scoreDisplay.textContent = `Score: ${score}`;
     updateLivesDisplay();
     player.x = canvas.width / 2 - 25;
     player.y = canvas.height - 100;
     player.dy = 0;
     targetX = null;
+    lastScoreTime = Date.now();
+    isBoostedJump = false;
     
     generatePlatforms();
     
@@ -479,7 +508,7 @@ function startGame() {
 function gameOver() {
     gameRunning = false;
     bgMusic.pause();
-    finalScoreDisplay.textContent = `Score: ${score*0.1}`;
+    finalScoreDisplay.textContent = `Score: ${score}`;
     gameOverScreen.style.display = 'flex';
     if (score > highScore) highScore = score;
 }
