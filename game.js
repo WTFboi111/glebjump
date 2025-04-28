@@ -24,7 +24,7 @@ let accumulator = 0;
 // Boost system
 let lastScoreTime = 0;
 let isBoostedJump = false;
-const SCORE_TIMEOUT = 3000; // 3 seconds for boost
+const SCORE_TIMEOUT = 2000; // 3 seconds for boost
 
 // Game state
 let gameRunning = false;
@@ -57,10 +57,10 @@ const PLATFORM_TYPES = {
 };
 
 // Platform settings - измененные значения
-const PLATFORM_WIDTH = 35; // Было 70, теперь в 2 раза уже
-const PLATFORM_HEIGHT = 20;
-const MIN_VERTICAL_GAP = 40; // Было 60, уменьшено для более частого появления
-const MAX_VERTICAL_GAP = 80;  // Было 120, уменьшено
+const PLATFORM_WIDTH = 40; // Было 70, теперь в 2 раза уже
+const PLATFORM_HEIGHT = 13;
+const MIN_VERTICAL_GAP = 45; // Было 60, уменьшено для более частого появления
+const MAX_VERTICAL_GAP = 85;  // Было 120, уменьшено
 
 // Fruit
 const fruit = {
@@ -175,7 +175,7 @@ function generatePlatforms() {
     });
     
     // Generate other platforms - теперь 30 вместо 19
-    const PLATFORM_COUNT = 30;
+    const PLATFORM_COUNT = 40;
     let currentY = canvas.height - 100;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
@@ -398,9 +398,7 @@ function updatePlayer(delta) {
             player.y = canvas.height - 100;
             player.dy = player.jumpForce * 1.8;
             
-            // Generate safe platforms below
-            generateRescuePlatforms();
-            
+        
             // Visual effect
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
