@@ -458,7 +458,7 @@ function startGame() {
     score = 0;
     lives = 1;
     player.hasExtraLife = false;
-    scoreDisplay.textContent = `Score: ${score/10}`;
+    scoreDisplay.textContent = `Score: ${score*0.1}`;
     updateLivesDisplay();
     player.x = canvas.width / 2 - 25;
     player.y = canvas.height - 100;
@@ -479,7 +479,7 @@ function startGame() {
 function gameOver() {
     gameRunning = false;
     bgMusic.pause();
-    finalScoreDisplay.textContent = `Score: ${score/10}`;
+    finalScoreDisplay.textContent = `Score: ${score*0.1}`;
     gameOverScreen.style.display = 'flex';
     if (score > highScore) highScore = score;
 }
