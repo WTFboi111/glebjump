@@ -9,20 +9,24 @@ const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
 const bgMusic = document.getElementById('bg-music');
 const musicToggle = document.getElementById('music-toggle');
+const livesDisplay = document.getElementById('lives-display');
 
 // Set canvas size
 canvas.width = 360;
 canvas.height = 640;
 
-// Control settings
-let targetX = null; // X-координата цели для движения
-const MOVE_SPEED = 0.1; // Скорость приближения к цели (0.1 = 10% за кадр)
-const MAX_STEP = 6; // Максимальная скорость перемещения
+// Physics settings
+const FPS = 60;
+const FIXED_STEP = 1000 / FPS; // 16.67ms for 60fps
+let lastTime = 0;
+let accumulator = 0;
 
 // Game state
 let gameRunning = false;
 let score = 0;
 let highScore = 0;
+let lives = 1;
+let targetX = null;
 
 // Player
 const player = {
@@ -34,6 +38,7 @@ const player = {
     gravity: 0.4,
     jumpForce: -12,
     isJumping: false,
+    hasExtraLife: false,
     image: new Image()
 };
 player.image.src = 'assets/hero.png';
@@ -41,8 +46,20 @@ player.image.src = 'assets/hero.png';
 // Platform types
 const PLATFORM_TYPES = {
     NORMAL: 0,
-    BREAKABLE: 1
+    BREAKABLE: 1,
+    BOUNCY: 2 // New bouncy platform type
 };
+
+// Fruit
+const fruit = {
+    x: 0,
+    y: 0,
+    width: 30,
+    height: 30,
+    active: false,
+    image: new Image()
+};
+fruit.image.src = 'assets/fruit.png';
 
 // Create platform textures
 function createPlatformTexture(type) {
@@ -58,7 +75,8 @@ function createPlatformTexture(type) {
         for (let i = 0; i < 5; i++) {
             ctx.fillRect(i * 9, 12, 8, 3);
         }
-    } else {
+    } 
+    else if (type === PLATFORM_TYPES.BREAKABLE) {
         ctx.fillStyle = '#F44336';
         ctx.fillRect(0, 0, 45, 15);
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
@@ -70,6 +88,20 @@ function createPlatformTexture(type) {
         ctx.lineTo(35, 8);
         ctx.lineTo(40, 2);
         ctx.stroke();
+    }
+    else if (type === PLATFORM_TYPES.BOUNCY) {
+        ctx.fillStyle = '#2196F3';
+        ctx.fillRect(0, 0, 45, 15);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.arc(22, 7, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(12, 10, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(32, 10, 3, 0, Math.PI * 2);
+        ctx.fill();
     }
     return canvas;
 }
@@ -107,7 +139,8 @@ const PLATFORM_HEIGHT = 15;
 
 const platformTextures = {
     [PLATFORM_TYPES.NORMAL]: createPlatformTexture(PLATFORM_TYPES.NORMAL),
-    [PLATFORM_TYPES.BREAKABLE]: createPlatformTexture(PLATFORM_TYPES.BREAKABLE)
+    [PLATFORM_TYPES.BREAKABLE]: createPlatformTexture(PLATFORM_TYPES.BREAKABLE),
+    [PLATFORM_TYPES.BOUNCY]: createPlatformTexture(PLATFORM_TYPES.BOUNCY)
 };
 
 function generatePlatforms() {
@@ -123,13 +156,32 @@ function generatePlatforms() {
     const verticalStep = (canvas.height - 100) / (PLATFORM_COUNT - 1);
     for (let i = 0; i < PLATFORM_COUNT; i++) {
         const y = Math.max(50, i * verticalStep + (Math.random() * 50 - 25));
+        let type;
+        const rand = Math.random();
+        
+        if (rand > 0.9) {
+            type = PLATFORM_TYPES.BOUNCY; // 10% chance for bouncy
+        } else if (rand > 0.7) {
+            type = PLATFORM_TYPES.BREAKABLE; // 20% chance for breakable
+        } else {
+            type = PLATFORM_TYPES.NORMAL; // 70% chance for normal
+        }
+        
         platforms.push({
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
             y: y,
             width: PLATFORM_WIDTH,
             height: PLATFORM_HEIGHT,
-            type: Math.random() > 0.8 ? PLATFORM_TYPES.BREAKABLE : PLATFORM_TYPES.NORMAL
+            type: type
         });
+    }
+    
+    // Spawn fruit with 30% chance
+    if (Math.random() > 0.7 && !fruit.active) {
+        const platform = platforms[Math.floor(Math.random() * platforms.length)];
+        fruit.x = platform.x + platform.width/2 - fruit.width/2;
+        fruit.y = platform.y - fruit.height - 5;
+        fruit.active = true;
     }
 }
 
@@ -147,6 +199,12 @@ function drawPlatforms() {
     });
 }
 
+function drawFruit() {
+    if (fruit.active) {
+        ctx.drawImage(fruit.image, fruit.x, fruit.y, fruit.width, fruit.height);
+    }
+}
+
 function checkPlatformCollision() {
     const playerBottom = player.y + player.height;
     const playerCenter = player.x + player.width / 2;
@@ -158,7 +216,11 @@ function checkPlatformCollision() {
             playerCenter >= platform.x &&
             playerCenter <= platform.x + platform.width) {
             
-            player.dy = player.jumpForce;
+            if (platform.type === PLATFORM_TYPES.BOUNCY) {
+                player.dy = player.jumpForce * 5; // 5x higher jump
+            } else {
+                player.dy = player.jumpForce;
+            }
             player.isJumping = false;
             
             if (platform.type === PLATFORM_TYPES.BREAKABLE) {
@@ -169,7 +231,9 @@ function checkPlatformCollision() {
                         y: -50,
                         width: PLATFORM_WIDTH,
                         height: PLATFORM_HEIGHT,
-                        type: Math.random() > 0.8 ? PLATFORM_TYPES.BREAKABLE : PLATFORM_TYPES.NORMAL
+                        type: Math.random() > 0.8 ? PLATFORM_TYPES.BREAKABLE : 
+                              Math.random() > 0.6 ? PLATFORM_TYPES.BOUNCY : 
+                              PLATFORM_TYPES.NORMAL
                     });
                 }, 100);
             }
@@ -177,30 +241,61 @@ function checkPlatformCollision() {
     });
 }
 
-function updatePlayer() {
-    player.dy += player.gravity;
-    player.y += player.dy;
+function checkFruitCollision() {
+    if (!fruit.active) return;
     
-    // Плавное движение к цели
+    if (player.x + player.width > fruit.x &&
+        player.x < fruit.x + fruit.width &&
+        player.y + player.height > fruit.y &&
+        player.y < fruit.y + fruit.height) {
+        
+        player.hasExtraLife = true;
+        fruit.active = false;
+        lives++;
+        updateLivesDisplay();
+    }
+}
+
+function updateLivesDisplay() {
+    livesDisplay.textContent = `Lives: ${lives}`;
+}
+
+function updatePlayer(delta) {
+    const deltaFactor = delta / FIXED_STEP; // Normalize for fixed timestep
+    
+    player.dy += player.gravity * deltaFactor;
+    player.y += player.dy * deltaFactor;
+    
+    // Movement to target
     if (targetX !== null) {
         const targetCenter = targetX - player.width/2;
         const distance = targetCenter - player.x;
-        let step = distance * MOVE_SPEED;
-        
-        // Ограничиваем максимальную скорость
-        if (Math.abs(step) > MAX_STEP) {
-            step = Math.sign(step) * MAX_STEP;
-        }
-        
-        player.x += step;
+        player.x += distance * 0.1 * deltaFactor;
     }
     
     // Screen wrapping
     if (player.x + player.width < 0) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -player.width;
     
-    // Game over if fall
-    if (player.y > canvas.height) gameOver();
+    // Check if player falls off the bottom
+    if (player.y > canvas.height) {
+        if (player.hasExtraLife) {
+            // Save with extra life
+            player.hasExtraLife = false;
+            lives--;
+            updateLivesDisplay();
+            player.y = canvas.height / 3;
+            player.dy = player.jumpForce;
+            
+            // Move platforms up to match
+            const diff = player.y - (canvas.height - 100);
+            platforms.forEach(platform => {
+                platform.y -= diff;
+            });
+        } else {
+            gameOver();
+        }
+    }
     
     // Camera follow
     if (player.y < canvas.height / 3) {
@@ -212,22 +307,52 @@ function updatePlayer() {
             if (platform.y > canvas.height) {
                 platform.y = -platform.height;
                 platform.x = Math.random() * (canvas.width - platform.width);
+                
+                // Randomize platform type when regenerating
+                const rand = Math.random();
+                platform.type = rand > 0.9 ? PLATFORM_TYPES.BOUNCY : 
+                               rand > 0.7 ? PLATFORM_TYPES.BREAKABLE : 
+                               PLATFORM_TYPES.NORMAL;
+                
                 score += 10;
                 scoreDisplay.textContent = `Score: ${score}`;
             }
         });
+        
+        // Move fruit if active
+        if (fruit.active) {
+            fruit.y += diff;
+            if (fruit.y > canvas.height) {
+                fruit.active = false;
+            }
+        }
     }
     
     checkPlatformCollision();
+    checkFruitCollision();
 }
 
-function gameLoop() {
+function gameLoop(timestamp) {
     if (!gameRunning) return;
+    
+    if (!lastTime) lastTime = timestamp;
+    let deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+    
+    // Prevent spiral of death
+    if (deltaTime > 1000) deltaTime = FIXED_STEP;
+    
+    accumulator += deltaTime;
+    
+    while (accumulator >= FIXED_STEP) {
+        updatePlayer(FIXED_STEP);
+        accumulator -= FIXED_STEP;
+    }
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBackground();
-    updatePlayer();
     drawPlatforms();
+    drawFruit();
     drawPlayer();
     
     requestAnimationFrame(gameLoop);
@@ -240,7 +365,10 @@ function startGame() {
     }
     
     score = 0;
+    lives = 1;
+    player.hasExtraLife = false;
     scoreDisplay.textContent = `Score: ${score}`;
+    updateLivesDisplay();
     player.x = canvas.width / 2 - 25;
     player.y = canvas.height - 100;
     player.dy = 0;
@@ -251,8 +379,10 @@ function startGame() {
     startScreen.style.display = 'none';
     gameOverScreen.style.display = 'none';
     gameRunning = true;
+    lastTime = 0;
+    accumulator = 0;
     
-    gameLoop();
+    requestAnimationFrame(gameLoop);
 }
 
 function gameOver() {
@@ -263,7 +393,7 @@ function gameOver() {
     if (score > highScore) highScore = score;
 }
 
-// Touch controls (move to target)
+// Controls (same as before)
 canvas.addEventListener('touchstart', (e) => {
     if (!gameRunning) return;
     e.preventDefault();
@@ -282,7 +412,7 @@ canvas.addEventListener('touchend', () => {
     targetX = null;
 });
 
-// Mouse controls (for testing on desktop)
+// Mouse controls
 canvas.addEventListener('mousedown', (e) => {
     if (!gameRunning) return;
     const rect = canvas.getBoundingClientRect();
@@ -299,7 +429,7 @@ canvas.addEventListener('mouseup', () => {
     targetX = null;
 });
 
-// Keyboard controls (left/right for desktop)
+// Keyboard controls
 document.addEventListener('keydown', (e) => {
     if (!gameRunning) return;
     if (e.key === 'ArrowLeft' || e.key === 'a') {
