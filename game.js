@@ -168,10 +168,10 @@ function generatePlatforms() {
     });
     
     // Generate platforms with good distribution
-    const PLATFORM_COUNT = 30;
+    const PLATFORM_COUNT = 22;
     const minGap = 50;
     const maxGap = 100;
-    let currentY = canvas.height - 100;
+    let currentY = canvas.height - 50;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
         currentY -= minGap + Math.random() * (maxGap - minGap);
@@ -339,10 +339,9 @@ function updatePlayer(delta) {
             
             // Respawn with bounce effect
             player.y = canvas.height - 100;
-            player.dy = player.jumpForce * 1.8;
+            player.dy = player.jumpForce * 2.5;
             
-            // Generate safe platforms below
-            generateRescuePlatforms();
+            
             
             // Visual effect
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
