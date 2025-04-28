@@ -33,6 +33,16 @@ let highScore = 0;
 let lives = 1;
 let targetX = null;
 
+// Platform generation settings
+const PLATFORM_GENERATION = {
+    MIN_GAP: 70,        // Minimum vertical gap
+    MAX_GAP: 130,       // Maximum vertical gap
+    MIN_X: 20,          // Minimum x position
+    MAX_X: 300,         // Maximum x position
+    SCREEN_COVERAGE: 0.8, // Screen coverage ratio
+    DENSITY: 1.5        // Platform density factor
+};
+
 // Player
 const player = {
     x: canvas.width / 2 - 25,
@@ -70,51 +80,51 @@ fruit.image.src = 'assets/fruit.png';
 // Create platform textures
 function createPlatformTexture(type) {
     const canvas = document.createElement('canvas');
-    canvas.width = 45;
-    canvas.height = 15;
+    canvas.width = 70;
+    canvas.height = 20;
     const ctx = canvas.getContext('2d');
     
     if (type === PLATFORM_TYPES.NORMAL) {
         ctx.fillStyle = '#4CAF50';
-        ctx.fillRect(0, 0, 45, 15);
+        ctx.fillRect(0, 0, 70, 20);
         ctx.fillStyle = '#388E3C';
-        for (let i = 0; i < 5; i++) {
-            ctx.fillRect(i * 9, 12, 8, 3);
+        for (let i = 0; i < 7; i++) {
+            ctx.fillRect(i * 10, 15, 8, 5);
         }
     } 
     else if (type === PLATFORM_TYPES.BREAKABLE) {
         ctx.fillStyle = '#F44336';
-        ctx.fillRect(0, 0, 45, 15);
+        ctx.fillRect(0, 0, 70, 20);
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(5, 5);
-        ctx.lineTo(15, 10);
-        ctx.lineTo(25, 3);
-        ctx.lineTo(35, 8);
-        ctx.lineTo(40, 2);
+        ctx.moveTo(10, 10);
+        ctx.lineTo(25, 15);
+        ctx.lineTo(40, 5);
+        ctx.lineTo(55, 10);
+        ctx.lineTo(65, 3);
         ctx.stroke();
     }
     else if (type === PLATFORM_TYPES.BOUNCY) {
         ctx.fillStyle = '#2196F3';
-        ctx.fillRect(0, 0, 45, 15);
+        ctx.fillRect(0, 0, 70, 20);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.beginPath();
-        ctx.arc(22, 7, 5, 0, Math.PI * 2);
+        ctx.arc(35, 10, 7, 0, Math.PI * 2);
         ctx.fill();
     }
     else if (type === PLATFORM_TYPES.MOVING) {
         ctx.fillStyle = '#FFEB3B';
-        ctx.fillRect(0, 0, 45, 15);
+        ctx.fillRect(0, 0, 70, 20);
         ctx.fillStyle = '#FFC107';
         // Draw arrows
-        for (let x = 5; x <= 35; x += 15) {
+        for (let x = 10; x <= 50; x += 20) {
             ctx.beginPath();
-            ctx.moveTo(x, 7);
-            ctx.lineTo(x + 5, 7);
-            ctx.lineTo(x + 2.5, 4);
-            ctx.lineTo(x + 5, 7);
-            ctx.lineTo(x + 2.5, 10);
+            ctx.moveTo(x, 10);
+            ctx.lineTo(x + 10, 10);
+            ctx.lineTo(x + 5, 5);
+            ctx.lineTo(x + 10, 10);
+            ctx.lineTo(x + 5, 15);
             ctx.fill();
         }
     }
@@ -157,8 +167,24 @@ function drawCloud(x, y, size) {
 
 // Platforms
 let platforms = [];
-const PLATFORM_WIDTH = 45;
-const PLATFORM_HEIGHT = 15;
+const PLATFORM_WIDTH = 70;
+const PLATFORM_HEIGHT = 20;
+
+function getWeightedPlatformType(height) {
+    const heightRatio = Math.min(1, height / (canvas.height * 5));
+    const rand = Math.random();
+    
+    if (rand > 0.97 - (heightRatio * 0.1)) {
+        return PLATFORM_TYPES.BOUNCY;
+    }
+    if (rand > 0.90 - (heightRatio * 0.05)) {
+        return PLATFORM_TYPES.MOVING;
+    }
+    if (rand > 0.78) {
+        return PLATFORM_TYPES.BREAKABLE;
+    }
+    return PLATFORM_TYPES.NORMAL;
+}
 
 function generatePlatforms() {
     platforms = [];
@@ -172,48 +198,48 @@ function generatePlatforms() {
         type: PLATFORM_TYPES.NORMAL
     });
     
-    // Generate platforms with good distribution
-    const PLATFORM_COUNT = 20;
-    const minGap = 50;
-    const maxGap = 100;
-    let currentY = canvas.height - 50;
+    // Calculate how many platforms we need to fill the screen
+    const avgGap = (PLATFORM_GENERATION.MIN_GAP + PLATFORM_GENERATION.MAX_GAP) / 2;
+    const platformsPerScreen = Math.floor((canvas.height * PLATFORM_GENERATION.SCREEN_COVERAGE) / avgGap);
+    const PLATFORM_COUNT = Math.floor(platformsPerScreen * PLATFORM_GENERATION.DENSITY);
     
-    for (let i = 0; i < PLATFORM_COUNT; i++) {
-        currentY -= minGap + Math.random() * (maxGap - minGap);
+    let currentY = canvas.height - 100;
+    let attempts = 0;
+    const MAX_ATTEMPTS = PLATFORM_COUNT * 2;
+
+    while (platforms.length < PLATFORM_COUNT && attempts < MAX_ATTEMPTS) {
+        attempts++;
+        const gap = PLATFORM_GENERATION.MIN_GAP + 
+                   Math.random() * (PLATFORM_GENERATION.MAX_GAP - PLATFORM_GENERATION.MIN_GAP);
         
-        let type;
-        const rand = Math.random();
+        currentY -= gap;
         
-        if (rand > 0.97) {
-            type = PLATFORM_TYPES.BOUNCY; // 3% - bouncy
-        } 
-        else if (rand > 0.92) {
-            type = PLATFORM_TYPES.MOVING; // 5% - moving
-            platforms.push({
-                x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+        const x = PLATFORM_GENERATION.MIN_X + 
+                 Math.random() * (PLATFORM_GENERATION.MAX_X - PLATFORM_GENERATION.MIN_X);
+        
+        // Check for overlapping platforms
+        const overlaps = platforms.some(p => 
+            Math.abs(p.y - currentY) < PLATFORM_HEIGHT * 2 &&
+            Math.abs(p.x - x) < PLATFORM_WIDTH * 1.5
+        );
+        
+        if (!overlaps) {
+            const type = getWeightedPlatformType(-currentY);
+            const platform = {
+                x: x,
                 y: currentY,
                 width: PLATFORM_WIDTH,
                 height: PLATFORM_HEIGHT,
-                type: type,
-                direction: Math.random() > 0.5 ? 1 : -1,
-                speed: 1.5
-            });
-            continue;
+                type: type
+            };
+            
+            if (type === PLATFORM_TYPES.MOVING) {
+                platform.direction = Math.random() > 0.5 ? 1 : -1;
+                platform.speed = 1.5;
+            }
+            
+            platforms.push(platform);
         }
-        else if (rand > 0.80) {
-            type = PLATFORM_TYPES.BREAKABLE; // 12% - breakable
-        }
-        else {
-            type = PLATFORM_TYPES.NORMAL; // 80% - normal
-        }
-        
-        platforms.push({
-            x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-            y: currentY,
-            width: PLATFORM_WIDTH,
-            height: PLATFORM_HEIGHT,
-            type: type
-        });
     }
     
     // Spawn fruit (not on moving or breakable platforms)
@@ -231,21 +257,83 @@ function generatePlatforms() {
     }
 }
 
+function generateAdditionalPlatforms(count) {
+    const topPlatformY = Math.min(...platforms.map(p => p.y));
+    let currentY = topPlatformY;
+    
+    for (let i = 0; i < count; i++) {
+        const gap = PLATFORM_GENERATION.MIN_GAP + 
+                   Math.random() * (PLATFORM_GENERATION.MAX_GAP - PLATFORM_GENERATION.MIN_GAP);
+        currentY -= gap;
+        
+        const x = PLATFORM_GENERATION.MIN_X + 
+                 Math.random() * (PLATFORM_GENERATION.MAX_X - PLATFORM_GENERATION.MIN_X);
+        
+        const type = getWeightedPlatformType(-currentY);
+        const platform = {
+            x: x,
+            y: currentY,
+            width: PLATFORM_WIDTH,
+            height: PLATFORM_HEIGHT,
+            type: type
+        };
+        
+        if (type === PLATFORM_TYPES.MOVING) {
+            platform.direction = Math.random() > 0.5 ? 1 : -1;
+            platform.speed = 1.5;
+        }
+        
+        platforms.push(platform);
+    }
+}
+
 function updateMovingPlatforms(delta) {
     platforms.forEach(platform => {
         if (platform.type === PLATFORM_TYPES.MOVING) {
             platform.x += platform.direction * platform.speed * (delta / FIXED_STEP);
             
-            if (platform.x <= 0) {
-                platform.x = 0;
+            if (platform.x <= PLATFORM_GENERATION.MIN_X) {
+                platform.x = PLATFORM_GENERATION.MIN_X;
                 platform.direction = 1;
             } 
-            else if (platform.x + platform.width >= canvas.width) {
-                platform.x = canvas.width - platform.width;
+            else if (platform.x + platform.width >= PLATFORM_GENERATION.MAX_X + PLATFORM_WIDTH) {
+                platform.x = PLATFORM_GENERATION.MAX_X;
                 platform.direction = -1;
             }
         }
     });
+}
+
+function scrollPlatforms(diff) {
+    let platformsScrolled = 0;
+    
+    platforms.forEach(platform => {
+        platform.y += diff;
+        if (platform.y > canvas.height) {
+            platform.y = -PLATFORM_HEIGHT;
+            platform.x = PLATFORM_GENERATION.MIN_X + 
+                        Math.random() * (PLATFORM_GENERATION.MAX_X - PLATFORM_GENERATION.MIN_X);
+            platform.type = getWeightedPlatformType(-platform.y);
+            platformsScrolled++;
+            
+            if (platform.type === PLATFORM_TYPES.MOVING) {
+                platform.direction = Math.random() > 0.5 ? 1 : -1;
+                platform.speed = 1.5;
+            }
+        }
+    });
+    
+    // Balance platform count
+    const visiblePlatforms = platforms.filter(p => 
+        p.y > -PLATFORM_HEIGHT && p.y < canvas.height
+    ).length;
+    
+    const desiredVisible = Math.floor((canvas.height * PLATFORM_GENERATION.SCREEN_COVERAGE) / 
+                         ((PLATFORM_GENERATION.MIN_GAP + PLATFORM_GENERATION.MAX_GAP) / 2));
+    
+    if (visiblePlatforms < desiredVisible * 0.8) {
+        generateAdditionalPlatforms(desiredVisible - visiblePlatforms);
+    }
 }
 
 function drawPlayer() {
@@ -284,7 +372,7 @@ function checkPlatformCollision() {
     
     // Check time without scoring
     const timeWithoutScore = Date.now() - lastScoreTime;
-    const shouldBoost = timeWithoutScore > SCORE_TIMEOUT
+    const shouldBoost = timeWithoutScore > SCORE_TIMEOUT && !isBoostedJump;
     
     platforms.forEach((platform, index) => {
         if (playerBottom <= platform.y + platform.height &&
@@ -297,16 +385,19 @@ function checkPlatformCollision() {
             
             // Apply platform modifiers
             if (platform.type === PLATFORM_TYPES.BOUNCY) {
-                jumpForce *= 2;
+                jumpForce *= 1.8;
             } 
             else if (platform.type === PLATFORM_TYPES.BREAKABLE) {
                 jumpForce *= 0.7;
-                setTimeout(() => platforms.splice(index, 1), 100);
+                setTimeout(() => {
+                    const index = platforms.indexOf(platform);
+                    if (index > -1) platforms.splice(index, 1);
+                }, 100);
             }
             
             // Apply boost if needed
             if (shouldBoost) {
-                jumpForce *= 2;
+                jumpForce *= 1.5;
                 isBoostedJump = true;
                 showBoostEffect();
             }
@@ -364,9 +455,8 @@ function updatePlayer(delta) {
             
             // Respawn with bounce effect
             player.y = canvas.height - 100;
-            player.dy = player.jumpForce * 1.8;
+            player.dy = player.jumpForce * 2;
             
-           
             // Visual effect
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -380,26 +470,7 @@ function updatePlayer(delta) {
         const diff = canvas.height / 3 - player.y;
         player.y = canvas.height / 3;
         
-        platforms.forEach(platform => {
-            platform.y += diff;
-            if (platform.y > canvas.height) {
-                platform.y = -platform.height;
-                platform.x = Math.random() * (canvas.width - platform.width);
-                
-                // Randomize platform type
-                const rand = Math.random();
-                platform.type = rand > 0.97 ? PLATFORM_TYPES.BOUNCY : 
-                               rand > 0.92 ? PLATFORM_TYPES.MOVING : 
-                               rand > 0.80 ? PLATFORM_TYPES.BREAKABLE : 
-                               PLATFORM_TYPES.NORMAL;
-                
-                // Set moving platform properties
-                if (platform.type === PLATFORM_TYPES.MOVING) {
-                    platform.direction = Math.random() > 0.5 ? 1 : -1;
-                    platform.speed = 1.5;
-                }
-            }
-        });
+        scrollPlatforms(diff);
         
         // Move fruit if active
         if (fruit.active) {
@@ -409,7 +480,6 @@ function updatePlayer(delta) {
             }
         }
         
-        // Уменьшаем очки в 10 раз (1 вместо 10 за платформу)
         score += 1;
         scoreDisplay.textContent = `Score: ${score}`;
         lastScoreTime = Date.now();
@@ -432,7 +502,8 @@ function generateRescuePlatforms() {
         currentY += 60 + Math.random() * 40;
         
         platforms.push({
-            x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+            x: PLATFORM_GENERATION.MIN_X + 
+               Math.random() * (PLATFORM_GENERATION.MAX_X - PLATFORM_GENERATION.MIN_X),
             y: currentY,
             width: PLATFORM_WIDTH,
             height: PLATFORM_HEIGHT,
