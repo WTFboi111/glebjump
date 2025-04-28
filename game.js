@@ -173,10 +173,10 @@ function generatePlatforms() {
     });
     
     // Generate platforms with good distribution
-    const PLATFORM_COUNT = 30;
+    const PLATFORM_COUNT = 20;
     const minGap = 50;
     const maxGap = 100;
-    let currentY = canvas.height - 100;
+    let currentY = canvas.height - 50;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
         currentY -= minGap + Math.random() * (maxGap - minGap);
@@ -284,7 +284,7 @@ function checkPlatformCollision() {
     
     // Check time without scoring
     const timeWithoutScore = Date.now() - lastScoreTime;
-    const shouldBoost = timeWithoutScore > SCORE_TIMEOUT && !isBoostedJump;
+    const shouldBoost = timeWithoutScore > SCORE_TIMEOUT
     
     platforms.forEach((platform, index) => {
         if (playerBottom <= platform.y + platform.height &&
@@ -297,7 +297,7 @@ function checkPlatformCollision() {
             
             // Apply platform modifiers
             if (platform.type === PLATFORM_TYPES.BOUNCY) {
-                jumpForce *= 1.8;
+                jumpForce *= 2;
             } 
             else if (platform.type === PLATFORM_TYPES.BREAKABLE) {
                 jumpForce *= 0.7;
@@ -306,7 +306,7 @@ function checkPlatformCollision() {
             
             // Apply boost if needed
             if (shouldBoost) {
-                jumpForce *= 1.5;
+                jumpForce *= 2;
                 isBoostedJump = true;
                 showBoostEffect();
             }
