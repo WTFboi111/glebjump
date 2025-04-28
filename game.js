@@ -176,7 +176,7 @@ function generatePlatforms() {
     });
     
     // Generate other platforms
-    const PLATFORM_COUNT = 15;
+    const PLATFORM_COUNT = 19;
     let currentY = canvas.height - 100;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
