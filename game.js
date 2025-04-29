@@ -24,7 +24,7 @@ let accumulator = 0;
 // Boost system
 let lastScoreTime = 0;
 let isBoostedJump = false;
-const SCORE_TIMEOUT = 2000; // 3 seconds for boost
+const SCORE_TIMEOUT = 3500; // 3 seconds for boost
 
 // Game state
 let gameRunning = false;
@@ -175,7 +175,7 @@ function generatePlatforms() {
     });
     
     // Generate other platforms - теперь 30 вместо 19
-    const PLATFORM_COUNT = 55;
+    const PLATFORM_COUNT = 75;
     let currentY = canvas.height - 100;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
