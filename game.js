@@ -194,7 +194,7 @@ function generatePlatforms() {
             else type = PLATFORM_TYPES.NORMAL;
             
             // Распределяем платформы по ширине экрана
-            const platformSpacing = canvas.width / (platformsOnThisLevel + 1);
+            const platformSpacing = canvas.width
             const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
             
             platforms.push({
