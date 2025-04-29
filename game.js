@@ -56,11 +56,11 @@ const PLATFORM_TYPES = {
     MOVING: 3       // Yellow - moves horizontally
 };
 
-// Platform settings - измененные значения
-const PLATFORM_WIDTH = 45; // Было 70, теперь в 2 раза уже
+// Platform settings
+const PLATFORM_WIDTH = 42; // Узкие платформы (было 70)
 const PLATFORM_HEIGHT = 13;
-const MIN_VERTICAL_GAP = 45; // Было 60, уменьшено для более частого появления
-const MAX_VERTICAL_GAP = 85;  // Было 120, уменьшено
+const MIN_VERTICAL_GAP = 40; // Меньше вертикальный разрыв
+const MAX_VERTICAL_GAP = 80;  // Меньше вертикальный разрыв
 
 // Fruit
 const fruit = {
@@ -84,7 +84,7 @@ function createPlatformTexture(type) {
         ctx.fillStyle = '#4CAF50';
         ctx.fillRect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT);
         ctx.fillStyle = '#388E3C';
-        for (let i = 0; i < 4; i++) { // Уменьшено количество полосок для узкой платформы
+        for (let i = 0; i < 4; i++) {
             ctx.fillRect(i * 8, 15, 6, 5);
         }
     } 
@@ -105,14 +105,14 @@ function createPlatformTexture(type) {
         ctx.fillRect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.beginPath();
-        ctx.arc(PLATFORM_WIDTH/2, 10, 5, 0, Math.PI * 2); // Центрированный круг
+        ctx.arc(PLATFORM_WIDTH/2, 10, 5, 0, Math.PI * 2);
         ctx.fill();
     }
     else if (type === PLATFORM_TYPES.MOVING) {
         ctx.fillStyle = '#FFEB3B';
         ctx.fillRect(0, 0, PLATFORM_WIDTH, PLATFORM_HEIGHT);
         ctx.fillStyle = '#FFC107';
-        for (let x = 5; x <= 25; x += 10) { // Уменьшенные стрелки
+        for (let x = 5; x <= 25; x += 10) {
             ctx.beginPath();
             ctx.moveTo(x, 10);
             ctx.lineTo(x + 5, 10);
@@ -173,40 +173,41 @@ function generatePlatforms() {
         height: PLATFORM_HEIGHT,
         type: PLATFORM_TYPES.NORMAL
     });
+    
     // Generate other platforms
-const PLATFORM_COUNT = 50;
-let currentY = canvas.height -  50;
-
-for (let i = 0; i < PLATFORM_COUNT; i++) {
-    currentY -= MIN_VERTICAL_GAP + Math.random() * (MAX_VERTICAL_GAP - MIN_VERTICAL_GAP);
+    const PLATFORM_COUNT =50;
+    let currentY = canvas.height - 50;
     
-    // Количество платформ на текущей высоте (1-3)
-    const platformsOnThisLevel = 1 + Math.floor(Math.random() * 3);
-    
-    for (let j = 0; j < platformsOnThisLevel; j++) {
-        let type;
-        const rand = Math.random();
+    for (let i = 0; i < PLATFORM_COUNT; i++) {
+        currentY -= MIN_VERTICAL_GAP + Math.random() * (MAX_VERTICAL_GAP - MIN_VERTICAL_GAP);
         
-        if (rand > 0.95) type = PLATFORM_TYPES.BOUNCY;
-        else if (rand > 0.85) type = PLATFORM_TYPES.MOVING;
-        else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
-        else type = PLATFORM_TYPES.NORMAL;
+        // Количество платформ на текущей высоте (1-3)
+        const platformsOnThisLevel = 1 + Math.floor(Math.random() * 3);
         
-        // Распределяем платформы по ширине экрана
-        const platformSpacing = canvas.width / (platformsOnThisLevel + 1);
-        const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
-        
-        platforms.push({
-            x: platformX,
-            y: currentY,
-            width: PLATFORM_WIDTH,
-            height: PLATFORM_HEIGHT,
-            type: type,
-            direction: type === PLATFORM_TYPES.MOVING ? (Math.random() > 0.5 ? 1 : -1) : 0,
-            speed: type === PLATFORM_TYPES.MOVING ? 1.2 : 0
-        });
+        for (let j = 0; j < platformsOnThisLevel; j++) {
+            let type;
+            const rand = Math.random();
+            
+            if (rand > 0.95) type = PLATFORM_TYPES.BOUNCY;
+            else if (rand > 0.85) type = PLATFORM_TYPES.MOVING;
+            else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
+            else type = PLATFORM_TYPES.NORMAL;
+            
+            // Распределяем платформы по ширине экрана
+            const platformSpacing = canvas.width / (platformsOnThisLevel + 1);
+            const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
+            
+            platforms.push({
+                x: platformX,
+                y: currentY,
+                width: PLATFORM_WIDTH,
+                height: PLATFORM_HEIGHT,
+                type: type,
+                direction: type === PLATFORM_TYPES.MOVING ? (Math.random() > 0.5 ? 1 : -1) : 0,
+                speed: type === PLATFORM_TYPES.MOVING ? 1.2 : 0
+            });
+        }
     }
-}
     
     // Spawn fruit (not on breakable platforms)
     if (Math.random() > 0.7) {
@@ -237,36 +238,50 @@ function updateMovingPlatforms(delta) {
     });
 }
 
-if (platformsNeeded > 0) {
-    let currentY = topPlatformY;
+function scrollPlatforms(diff) {
+    // Move all platforms down
+    platforms.forEach(platform => {
+        platform.y += diff;
+    });
     
-    for (let i = 0; i < platformsNeeded; i++) {
-        currentY -= MIN_VERTICAL_GAP + Math.random() * (MAX_VERTICAL_GAP - MIN_VERTICAL_GAP);
+    // Remove platforms that went below the screen
+    platforms = platforms.filter(platform => platform.y < canvas.height);
+    
+    // Add new platforms at the top if needed
+    const topPlatformY = Math.min(...platforms.map(p => p.y));
+    const platformsNeeded = 25 - platforms.length;
+    
+    if (platformsNeeded > 0) {
+        let currentY = topPlatformY;
         
-        // Количество платформ на текущей высоте (1-3)
-        const platformsOnThisLevel = 1 + Math.floor(Math.random() * 3);
-        
-        for (let j = 0; j < platformsOnThisLevel; j++) {
-            let type;
-            const rand = Math.random();
+        for (let i = 0; i < platformsNeeded; i++) {
+            currentY -= MIN_VERTICAL_GAP + Math.random() * (MAX_VERTICAL_GAP - MIN_VERTICAL_GAP);
             
-            if (rand > 0.95) type = PLATFORM_TYPES.BOUNCY;
-            else if (rand > 0.85) type = PLATFORM_TYPES.MOVING;
-            else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
-            else type = PLATFORM_TYPES.NORMAL;
+            // Количество платформ на текущей высоте (1-3)
+            const platformsOnThisLevel = 1 + Math.floor(Math.random() * 3);
             
-            const platformSpacing = canvas.width / (platformsOnThisLevel + 1);
-            const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
-            
-            platforms.push({
-                x: platformX,
-                y: currentY,
-                width: PLATFORM_WIDTH,
-                height: PLATFORM_HEIGHT,
-                type: type,
-                direction: type === PLATFORM_TYPES.MOVING ? (Math.random() > 0.5 ? 1 : -1) : 0,
-                speed: type === PLATFORM_TYPES.MOVING ? 1.2 : 0
-            });
+            for (let j = 0; j < platformsOnThisLevel; j++) {
+                let type;
+                const rand = Math.random();
+                
+                if (rand > 0.95) type = PLATFORM_TYPES.BOUNCY;
+                else if (rand > 0.85) type = PLATFORM_TYPES.MOVING;
+                else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
+                else type = PLATFORM_TYPES.NORMAL;
+                
+                const platformSpacing = canvas.width / (platformsOnThisLevel + 1);
+                const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
+                
+                platforms.push({
+                    x: platformX,
+                    y: currentY,
+                    width: PLATFORM_WIDTH,
+                    height: PLATFORM_HEIGHT,
+                    type: type,
+                    direction: type === PLATFORM_TYPES.MOVING ? (Math.random() > 0.5 ? 1 : -1) : 0,
+                    speed: type === PLATFORM_TYPES.MOVING ? 1.2 : 0
+                });
+            }
         }
     }
 }
@@ -391,8 +406,7 @@ function updatePlayer(delta) {
             // Respawn with bounce effect
             player.y = canvas.height - 100;
             player.dy = player.jumpForce * 1.8;
-            
-        
+    
             // Visual effect
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -437,21 +451,33 @@ function generateRescuePlatforms() {
     for (let i = 0; i < count; i++) {
         currentY += 60 + Math.random() * 40;
         
-        platforms.push({
-            x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-            y: currentY,
-            width: PLATFORM_WIDTH,
-            height: PLATFORM_HEIGHT,
-            type: i === 4 ? PLATFORM_TYPES.BOUNCY : PLATFORM_TYPES.NORMAL
-        });
+        // 1-3 платформы на уровне (кроме 5-й, которая всегда одна и BOUNCY)
+        const platformsOnThisLevel = i === 4 ? 1 : 1 + Math.floor(Math.random() * 3);
+        
+        for (let j = 0; j < platformsOnThisLevel; j++) {
+            const type = i === 4 ? PLATFORM_TYPES.BOUNCY : PLATFORM_TYPES.NORMAL;
+            const platformSpacing = canvas.width / (platformsOnThisLevel + 1);
+            const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
+            
+            platforms.push({
+                x: platformX,
+                y: currentY,
+                width: PLATFORM_WIDTH,
+                height: PLATFORM_HEIGHT,
+                type: type
+            });
+        }
     }
     
     // 50% chance for fruit
     if (Math.random() > 0.5) {
-        const platform = platforms[Math.floor(Math.random() * platforms.length)];
-        fruit.x = platform.x + platform.width/2 - fruit.width/2;
-        fruit.y = platform.y - fruit.height - 5;
-        fruit.active = true;
+        const stablePlatforms = platforms.filter(p => p.type !== PLATFORM_TYPES.BREAKABLE);
+        if (stablePlatforms.length > 0) {
+            const platform = stablePlatforms[Math.floor(Math.random() * stablePlatforms.length)];
+            fruit.x = platform.x + platform.width/2 - fruit.width/2;
+            fruit.y = platform.y - fruit.height - 5;
+            fruit.active = true;
+        }
     }
 }
 
