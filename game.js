@@ -57,7 +57,7 @@ const PLATFORM_TYPES = {
 };
 
 // Platform settings - измененные значения
-const PLATFORM_WIDTH = 40; // Было 70, теперь в 2 раза уже
+const PLATFORM_WIDTH = 45; // Было 70, теперь в 2 раза уже
 const PLATFORM_HEIGHT = 13;
 const MIN_VERTICAL_GAP = 45; // Было 60, уменьшено для более частого появления
 const MAX_VERTICAL_GAP = 85;  // Было 120, уменьшено
@@ -175,7 +175,7 @@ function generatePlatforms() {
     });
     
     // Generate other platforms - теперь 30 вместо 19
-    const PLATFORM_COUNT = 40;
+    const PLATFORM_COUNT = 55;
     let currentY = canvas.height - 100;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
