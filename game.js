@@ -268,12 +268,9 @@ function scrollPlatforms(diff) {
                 else if (rand > 0.85) type = PLATFORM_TYPES.MOVING;
                 else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
                 else type = PLATFORM_TYPES.NORMAL;
-                
-                const platformSpacing = canvas.width / (platformsOnThisLevel + 1);
-                const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
-                
+            
                 platforms.push({
-                    x: platformX,
+                    x: Math.random() * (canvas.width - PLATFORM_WIDTH),
                     y: currentY,
                     width: PLATFORM_WIDTH,
                     height: PLATFORM_HEIGHT,
