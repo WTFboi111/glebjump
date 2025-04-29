@@ -165,7 +165,7 @@ let platforms = [];
 function generatePlatforms() {
     platforms = [];
     
-    // Initial platform
+    // Начальная платформа под игроком
     platforms.push({
         x: canvas.width / 2 - PLATFORM_WIDTH / 2,
         y: canvas.height - 50,
@@ -174,9 +174,9 @@ function generatePlatforms() {
         type: PLATFORM_TYPES.NORMAL
     });
     
-    // Generate other platforms
-    const PLATFORM_COUNT =50;
-    let currentY = canvas.height - 50;
+    // Генерация остальных платформ
+    const PLATFORM_COUNT = 50;
+    let currentY = canvas.height - 100;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
         currentY -= MIN_VERTICAL_GAP + Math.random() * (MAX_VERTICAL_GAP - MIN_VERTICAL_GAP);
@@ -193,9 +193,10 @@ function generatePlatforms() {
             else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
             else type = PLATFORM_TYPES.NORMAL;
             
-            // Распределяем платформы по ширине экрана
-            const platformSpacing = canvas.width
-            const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
+            // Случайная позиция по X с отступами от краёв
+            const minX = 20;
+            const maxX = canvas.width - PLATFORM_WIDTH - 20;
+            const platformX = minX + Math.random() * (maxX - minX);
             
             platforms.push({
                 x: platformX,
@@ -209,6 +210,17 @@ function generatePlatforms() {
         }
     }
     
+    // Фрукт (не на разрушаемых платформах)
+    if (Math.random() > 0.7) {
+        const stablePlatforms = platforms.filter(p => p.type !== PLATFORM_TYPES.BREAKABLE);
+        if (stablePlatforms.length > 0) {
+            const platform = stablePlatforms[Math.floor(Math.random() * stablePlatforms.length)];
+            fruit.x = platform.x + platform.width/2 - fruit.width/2;
+            fruit.y = platform.y - fruit.height - 5;
+            fruit.active = true;
+        }
+    }
+}
     // Spawn fruit (not on breakable platforms)
     if (Math.random() > 0.7) {
         const stablePlatforms = platforms.filter(p => p.type !== PLATFORM_TYPES.BREAKABLE);
@@ -239,15 +251,15 @@ function updateMovingPlatforms(delta) {
 }
 
 function scrollPlatforms(diff) {
-    // Move all platforms down
+    // Двигаем все платформы вниз
     platforms.forEach(platform => {
         platform.y += diff;
     });
     
-    // Remove platforms that went below the screen
+    // Удаляем платформы за пределами экрана
     platforms = platforms.filter(platform => platform.y < canvas.height);
     
-    // Add new platforms at the top if needed
+    // Добавляем новые платформы сверху, если нужно
     const topPlatformY = Math.min(...platforms.map(p => p.y));
     const platformsNeeded = 25 - platforms.length;
     
@@ -257,7 +269,7 @@ function scrollPlatforms(diff) {
         for (let i = 0; i < platformsNeeded; i++) {
             currentY -= MIN_VERTICAL_GAP + Math.random() * (MAX_VERTICAL_GAP - MIN_VERTICAL_GAP);
             
-            // Количество платформ на текущей высоте (1-3)
+            // Количество платформ на уровне (1-3)
             const platformsOnThisLevel = 1 + Math.floor(Math.random() * 3);
             
             for (let j = 0; j < platformsOnThisLevel; j++) {
@@ -268,9 +280,14 @@ function scrollPlatforms(diff) {
                 else if (rand > 0.85) type = PLATFORM_TYPES.MOVING;
                 else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
                 else type = PLATFORM_TYPES.NORMAL;
-            
+                
+                // Случайная позиция по X с отступами
+                const minX = 20;
+                const maxX = canvas.width - PLATFORM_WIDTH - 20;
+                const platformX = minX + Math.random() * (maxX - minX);
+                
                 platforms.push({
-                    x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+                    x: platformX,
                     y: currentY,
                     width: PLATFORM_WIDTH,
                     height: PLATFORM_HEIGHT,
