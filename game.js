@@ -24,7 +24,7 @@ let accumulator = 0;
 // Boost system
 let lastScoreTime = 0;
 let isBoostedJump = false;
-const SCORE_TIMEOUT = 3500; // 3 seconds for boost
+const SCORE_TIMEOUT = 3000; // 3 seconds for boost
 
 // Game state
 let gameRunning = false;
@@ -57,10 +57,12 @@ const PLATFORM_TYPES = {
 };
 
 // Platform settings
-const PLATFORM_WIDTH = 42; // Узкие платформы (было 70)
+const PLATFORM_WIDTH = 45;
 const PLATFORM_HEIGHT = 13;
-const MIN_VERTICAL_GAP = 40; // Меньше вертикальный разрыв
-const MAX_VERTICAL_GAP = 80;  // Меньше вертикальный разрыв
+const MIN_VERTICAL_GAP = 40;
+const MAX_VERTICAL_GAP = 80;
+const MIN_X_POSITION = 20;
+const MAX_X_POSITION = canvas.width - PLATFORM_WIDTH - 20;
 
 // Fruit
 const fruit = {
@@ -165,7 +167,7 @@ let platforms = [];
 function generatePlatforms() {
     platforms = [];
     
-    // Начальная платформа под игроком
+    // Initial platform
     platforms.push({
         x: canvas.width / 2 - PLATFORM_WIDTH / 2,
         y: canvas.height - 50,
@@ -174,14 +176,13 @@ function generatePlatforms() {
         type: PLATFORM_TYPES.NORMAL
     });
     
-    // Генерация остальных платформ
+    // Generate other platforms
     const PLATFORM_COUNT = 50;
-    let currentY = canvas.height - 100;
+    let currentY = canvas.height - 50;
     
     for (let i = 0; i < PLATFORM_COUNT; i++) {
         currentY -= MIN_VERTICAL_GAP + Math.random() * (MAX_VERTICAL_GAP - MIN_VERTICAL_GAP);
         
-        // Количество платформ на текущей высоте (1-3)
         const platformsOnThisLevel = 1 + Math.floor(Math.random() * 3);
         
         for (let j = 0; j < platformsOnThisLevel; j++) {
@@ -193,10 +194,7 @@ function generatePlatforms() {
             else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
             else type = PLATFORM_TYPES.NORMAL;
             
-            // Случайная позиция по X с отступами от краёв
-            const minX = 20;
-            const maxX = canvas.width - PLATFORM_WIDTH - 20;
-            const platformX = minX + Math.random() * (maxX - minX);
+            const platformX = MIN_X_POSITION + Math.random() * (MAX_X_POSITION - MIN_X_POSITION);
             
             platforms.push({
                 x: platformX,
@@ -210,18 +208,7 @@ function generatePlatforms() {
         }
     }
     
-    // Фрукт (не на разрушаемых платформах)
-    if (Math.random() > 0.7) {
-        const stablePlatforms = platforms.filter(p => p.type !== PLATFORM_TYPES.BREAKABLE);
-        if (stablePlatforms.length > 0) {
-            const platform = stablePlatforms[Math.floor(Math.random() * stablePlatforms.length)];
-            fruit.x = platform.x + platform.width/2 - fruit.width/2;
-            fruit.y = platform.y - fruit.height - 5;
-            fruit.active = true;
-        }
-    }
-}
-    // Spawn fruit (not on breakable platforms)
+    // Spawn fruit
     if (Math.random() > 0.7) {
         const stablePlatforms = platforms.filter(p => p.type !== PLATFORM_TYPES.BREAKABLE);
         if (stablePlatforms.length > 0) {
@@ -251,15 +238,12 @@ function updateMovingPlatforms(delta) {
 }
 
 function scrollPlatforms(diff) {
-    // Двигаем все платформы вниз
     platforms.forEach(platform => {
         platform.y += diff;
     });
     
-    // Удаляем платформы за пределами экрана
     platforms = platforms.filter(platform => platform.y < canvas.height);
     
-    // Добавляем новые платформы сверху, если нужно
     const topPlatformY = Math.min(...platforms.map(p => p.y));
     const platformsNeeded = 25 - platforms.length;
     
@@ -269,7 +253,6 @@ function scrollPlatforms(diff) {
         for (let i = 0; i < platformsNeeded; i++) {
             currentY -= MIN_VERTICAL_GAP + Math.random() * (MAX_VERTICAL_GAP - MIN_VERTICAL_GAP);
             
-            // Количество платформ на уровне (1-3)
             const platformsOnThisLevel = 1 + Math.floor(Math.random() * 3);
             
             for (let j = 0; j < platformsOnThisLevel; j++) {
@@ -281,10 +264,7 @@ function scrollPlatforms(diff) {
                 else if (rand > 0.70) type = PLATFORM_TYPES.BREAKABLE;
                 else type = PLATFORM_TYPES.NORMAL;
                 
-                // Случайная позиция по X с отступами
-                const minX = 20;
-                const maxX = canvas.width - PLATFORM_WIDTH - 20;
-                const platformX = minX + Math.random() * (maxX - minX);
+                const platformX = MIN_X_POSITION + Math.random() * (MAX_X_POSITION - MIN_X_POSITION);
                 
                 platforms.push({
                     x: platformX,
@@ -334,7 +314,6 @@ function checkPlatformCollision() {
     const playerBottom = player.y + player.height;
     const playerCenter = player.x + player.width / 2;
     
-    // Check time without scoring
     const timeWithoutScore = Date.now() - lastScoreTime;
     const shouldBoost = timeWithoutScore > SCORE_TIMEOUT && !isBoostedJump;
     
@@ -347,7 +326,6 @@ function checkPlatformCollision() {
             
             let jumpForce = player.jumpForce;
             
-            // Apply platform modifiers
             if (platform.type === PLATFORM_TYPES.BOUNCY) {
                 jumpForce *= 1.8;
             } 
@@ -359,7 +337,6 @@ function checkPlatformCollision() {
                 }, 100);
             }
             
-            // Apply boost if needed
             if (shouldBoost) {
                 jumpForce *= 1.5;
                 isBoostedJump = true;
@@ -394,34 +371,27 @@ function updateLivesDisplay() {
 function updatePlayer(delta) {
     const deltaFactor = delta / FIXED_STEP;
     
-    // Apply gravity
     player.dy += player.gravity * deltaFactor;
     player.y += player.dy * deltaFactor;
     
-    // Move to touch position
     if (targetX !== null) {
         const targetCenter = targetX - player.width/2;
         const distance = targetCenter - player.x;
         player.x += distance * 0.1 * deltaFactor;
     }
     
-    // Screen wrapping
     if (player.x + player.width < 0) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -player.width;
     
-    // Check if player falls
     if (player.y > canvas.height) {
         if (player.hasExtraLife) {
-            // Save with extra life
             player.hasExtraLife = false;
             lives--;
             updateLivesDisplay();
             
-            // Respawn with bounce effect
             player.y = canvas.height - 100;
             player.dy = player.jumpForce * 1.8;
-    
-            // Visual effect
+      
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         } else {
@@ -429,14 +399,12 @@ function updatePlayer(delta) {
         }
     }
     
-    // Camera follow
     if (player.y < canvas.height / 3) {
         const diff = canvas.height / 3 - player.y;
         player.y = canvas.height / 3;
         
         scrollPlatforms(diff);
         
-        // Move fruit if active
         if (fruit.active) {
             fruit.y += diff;
             if (fruit.y > canvas.height) {
@@ -455,23 +423,19 @@ function updatePlayer(delta) {
 }
 
 function generateRescuePlatforms() {
-    // Remove platforms below player
     platforms = platforms.filter(p => p.y < player.y);
     
-    // Add new safe platforms
     const count = 8;
     let currentY = player.y + 60;
     
     for (let i = 0; i < count; i++) {
         currentY += 60 + Math.random() * 40;
         
-        // 1-3 платформы на уровне (кроме 5-й, которая всегда одна и BOUNCY)
         const platformsOnThisLevel = i === 4 ? 1 : 1 + Math.floor(Math.random() * 3);
         
         for (let j = 0; j < platformsOnThisLevel; j++) {
             const type = i === 4 ? PLATFORM_TYPES.BOUNCY : PLATFORM_TYPES.NORMAL;
-            const platformSpacing = canvas.width / (platformsOnThisLevel + 1);
-            const platformX = platformSpacing * (j + 1) - PLATFORM_WIDTH / 2;
+            const platformX = MIN_X_POSITION + Math.random() * (MAX_X_POSITION - MIN_X_POSITION);
             
             platforms.push({
                 x: platformX,
@@ -483,7 +447,6 @@ function generateRescuePlatforms() {
         }
     }
     
-    // 50% chance for fruit
     if (Math.random() > 0.5) {
         const stablePlatforms = platforms.filter(p => p.type !== PLATFORM_TYPES.BREAKABLE);
         if (stablePlatforms.length > 0) {
@@ -502,7 +465,6 @@ function gameLoop(timestamp) {
     let deltaTime = timestamp - lastTime;
     lastTime = timestamp;
     
-    // Prevent spiral of death
     if (deltaTime > 1000) deltaTime = FIXED_STEP;
     
     accumulator += deltaTime;
@@ -559,7 +521,7 @@ function gameOver() {
     if (score > highScore) highScore = score;
 }
 
-// Touch controls
+// Event listeners
 canvas.addEventListener('touchstart', (e) => {
     if (!gameRunning) return;
     e.preventDefault();
@@ -578,7 +540,6 @@ canvas.addEventListener('touchend', () => {
     targetX = null;
 });
 
-// Mouse controls
 canvas.addEventListener('mousedown', (e) => {
     if (!gameRunning) return;
     const rect = canvas.getBoundingClientRect();
@@ -595,7 +556,6 @@ canvas.addEventListener('mouseup', () => {
     targetX = null;
 });
 
-// Keyboard controls
 document.addEventListener('keydown', (e) => {
     if (!gameRunning) return;
     if (e.key === 'ArrowLeft' || e.key === 'a') {
@@ -612,7 +572,6 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-// Music control
 musicToggle.addEventListener('change', function() {
     if (this.checked && gameRunning) {
         bgMusic.play().catch(e => console.log("Audio play failed:", e));
@@ -621,7 +580,6 @@ musicToggle.addEventListener('change', function() {
     }
 });
 
-// Start buttons
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 
